@@ -126,6 +126,20 @@ int game_move_rot(game_t *g)
 }
 
 
+int game_move_down(game_t *g)
+{
+	int y = g->fy;
+	while (1) {
+		if (collision(g, g->fx, y)) {
+			g->fy = y - 1;
+			break;
+		}
+		++y;
+	}
+	return 1;
+}
+
+
 ////////////////////////////////////////////////////////////////////////////
 
 static void clear_figure(game_t *g)
