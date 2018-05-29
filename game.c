@@ -9,7 +9,7 @@
 #endif
 
 static void gen_figure(game_t *g);
-static int collision(const game_t *g, int x, int y);
+static int collision(const game_t *g, int x, int y, cell_t *fig);
 static void copy_figure(const game_t *g, cell_t *cp);
 static void clear_figure(game_t *g);
 
@@ -76,7 +76,7 @@ void game_tick(game_t *g)
 
 	if (g->ftyp == -1) {
 		gen_figure(g);
-		if (collision(g, g->fx, g->fy)) {
+		if (collision(g, g->fx, g->fy, NULL)) {
 			copy_figure(g, g->cells);
 			clear_figure(g);
 			g->game_over = 1;
@@ -85,7 +85,7 @@ void game_tick(game_t *g)
 		goto tick_end;
 	}
 
-	if (collision(g, g->fx, g->fy + 1)) {
+	if (collision(g, g->fx, g->fy + 1, NULL)) {
 		copy_figure(g, g->cells);
 		clear_figure(g);
 	} else {
@@ -100,7 +100,7 @@ tick_end:
 
 int game_move_r(game_t *g)
 {
-	if (collision(g, g->fx + 1, g->fy)) {
+	if (collision(g, g->fx + 1, g->fy, NULL)) {
 		return 0;
 	}
 
@@ -111,7 +111,7 @@ int game_move_r(game_t *g)
 
 int game_move_l(game_t *g)
 {
-	if (collision(g, g->fx - 1, g->fy)) {
+	if (collision(g, g->fx - 1, g->fy, NULL)) {
 		return 0;
 	}
 
@@ -130,7 +130,7 @@ int game_move_down(game_t *g)
 {
 	int y = g->fy;
 	while (1) {
-		if (collision(g, g->fx, y)) {
+		if (collision(g, g->fx, y, NULL)) {
 			g->fy = y - 1;
 			break;
 		}
@@ -172,7 +172,7 @@ static void copy_figure(const game_t *g, cell_t *cp)
 	}
 }
 
-static int collision(const game_t *g, int x, int y)
+static int collision(const game_t *g, int x, int y, cell_t *fig)
 {
 	int i, j, k = 0;
 	cell_t cell;
@@ -180,9 +180,11 @@ static int collision(const game_t *g, int x, int y)
 	if (x < 0 || x >= g->w) return 1;
 	if (y >= g->h) return 1;
 
+	if (!fig) fig = g->fig;
+
 	for (j = 0; j < 3; ++j) {
 		for (i = 0; i < 3; ++i) {
-			cell = g->fig[j * 3 + i];
+			cell = fig[j * 3 + i];
 			if (cell == EMPTY_CELL) continue;
 			if ((y + j) >= g->h) {
 				return 1;
