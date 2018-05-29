@@ -29,11 +29,12 @@ GC gc;
 unsigned long black, white;
 Atom wmDeleteMessage;
 int keyESC, keyEnter;
-time_t const_seconds0;
-suseconds_t const_useconds0;
 void (*drawptr)(Drawable dr, int ww, int wh);
 game_t *game;
 
+
+static time_t const_seconds0;
+static suseconds_t const_useconds0;
 
 static time_t getuseconds()
 {
@@ -49,14 +50,13 @@ static time_t getmseconds()
 }
 
 
-static int since_last(int msec)
-{
-	static time_t last = (time_t) 0;
-	if (!last) last = getmseconds();
+static time_t last_time = (time_t) 0;
 
+static int since_last_time(int msec)
+{
 	time_t now = getmseconds();
-	if ((now - last) > msec) {
-		last = now;
+	if ((now - last_time) > msec) {
+		last_time = now;
 		return 1;
 	} else {
 		return 0;
@@ -153,6 +153,8 @@ static void draw_win()
 	int w, h;
 	int depth = DefaultDepth(dis, screen);
 	Pixmap pixmap;
+	char buff[32];
+	int buffsz;
 
 	get_window_size(&w, &h);
 	pixmap = XCreatePixmap(dis, root, w, h, depth);
@@ -170,7 +172,18 @@ static void draw_win()
 	XCopyArea(dis, pixmap, win, gc, 0, 0, w, h, 0, 0);
 	XFreePixmap(dis, pixmap);
 
-	//XDrawImageString(dis, win, gc, 10, 10, "pixmap", 6);
+	if (game && game->game_over) {
+		XSetForeground(dis, gc, white);
+		XSetBackground(dis, gc, black);
+		XDrawImageString(dis, win, gc, 100, 100, " -=GAME OVER=- ", 15);
+	}
+
+	if (game) {
+		buffsz = snprintf(buff, 32, "LEVEL: %d", game->level + 1);
+		XSetForeground(dis, gc, white);
+		XSetBackground(dis, gc, black);
+		XDrawImageString(dis, win, gc, 100, 80, buff, buffsz);
+	}
 
 	XFlush(dis);
 }
@@ -248,7 +261,8 @@ static int wait_key(int keycode)
 
 static void check_for_tick()
 {
-	if (since_last(1000)) {
+	int msec = 1000 - game->level * 50;
+	if (since_last_time(msec < 100 ? 100 : msec)) {
 		game_tick(game);
 		draw_win();
 	}
@@ -293,6 +307,7 @@ static int time_loop()
 	struct timeval tv;
 
 	x11_fd = ConnectionNumber(dis);
+	last_time = getmseconds();
 
 	while(1) {
 		XFlush(dis);
@@ -342,7 +357,7 @@ again:
 		return;
 	}
 
-	game_destroy(game);
+	game_destroy(game); game = NULL;
 	goto again;
 }
 

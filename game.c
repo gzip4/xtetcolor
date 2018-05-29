@@ -55,6 +55,7 @@ void game_tick(game_t *g)
 	}
 
 	++g->ticks;
+	++g->level;
 }
 
 /*
