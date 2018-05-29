@@ -217,7 +217,7 @@ static int init_win()
 	return 1;
 }
 
-// 0 - exit, 1 - key
+// 0 - exit, 1 - key, if keycode=0 - anykey
 static int wait_key(int keycode)
 {
 	XEvent event;
@@ -226,6 +226,14 @@ static int wait_key(int keycode)
 
 		if (event.type==ClientMessage && event.xclient.data.l[0] == wmDeleteMessage) {
 			return 0;
+		}
+
+		if (event.type==KeyPress && event.xkey.keycode==keyESC) {
+			return 0;
+		}
+
+		if (event.type==KeyPress && keycode==0) {
+			return 1;
 		}
 
 		if (event.type==KeyPress && event.xkey.keycode==keycode) {
@@ -247,7 +255,7 @@ static void check_for_tick()
 }
 
 
-static int test_loop()
+static int x11_loop()
 {
 	XEvent event;
 
@@ -296,11 +304,9 @@ static int time_loop()
 		num_ready_fds = select(x11_fd + 1, &in_fds, NULL, NULL, &tv);
 		if (num_ready_fds == 0) {
 			check_for_tick();
-			//if (since_last(2000))
-			//	printf("%d\n", getmseconds());
 		}
 
-		if (!test_loop()) {
+		if (!x11_loop()) {
 			return 0;
 		}
 
@@ -317,7 +323,7 @@ static void game_loop()
 	draw_win();
 
 again:
-	if (!wait_key(keyEnter)) {
+	if (!wait_key(0)) {
 		return;
 	}
 

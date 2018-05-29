@@ -44,12 +44,15 @@ void game_tick(game_t *g)
 {
 	if (g->game_over) return;
 
-	if (g->ticks > g->h) {
+	if (g->ticks >= g->h) {
 		g->game_over = 1;
 		return;
 	}
 
 	g->cells[g->ticks*g->w+3] = 1;
+	if (g->ticks > 0) {
+		g->cells[(g->ticks-1)*g->w+3] = EMPTY_CELL;
+	}
 
 	++g->ticks;
 }
