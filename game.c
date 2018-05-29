@@ -6,9 +6,14 @@
 game_t *game_create(int w, int h)
 {
 	game_t *g = (game_t *) malloc( sizeof(game_t) );
-	if ( !g ) return g;
+	if ( !g ) return NULL;
 
-	g->cells = (cell_t *) malloc( w*h );
+	g->cells = (cell_t *) malloc( w*h*sizeof(cell_t) );
+	if ( !g->cells ) {
+		free(g);
+		return NULL;
+	}
+
 	g->ticks = 0;
 	g->w = w;
 	g->h = h;
