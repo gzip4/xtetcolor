@@ -4,6 +4,15 @@
 
 #include "game.h"
 
+#ifndef MAX
+#define MAX(x,y) ((x)>(y)?(x):(y))
+#endif
+
+static void gen_figure(game_t *g);
+static int collision(const game_t *g, int x, int y);
+static void copy_figure(const game_t *g, cell_t *cp);
+
+
 game_t *game_create(int w, int h)
 {
 	game_t *g = (game_t *) malloc( sizeof(game_t) );
@@ -34,13 +43,11 @@ game_t *game_create(int w, int h)
 	g->fy = -1;
 
 	memset(g->cells, EMPTY_CELL, w*h*sizeof(cell_t));
-	memset(g->fig, EMPTY_CELL, 3*3*sizeof(cell_t));
-
-	//g->cells[1] = 1;
-	//g->cells[3*w+1] = 1;
+	memset(g->fig,   EMPTY_CELL, 3*3*sizeof(cell_t));
 
 	return g;
 }
+
 
 void game_destroy(game_t *g)
 {
@@ -49,12 +56,73 @@ void game_destroy(game_t *g)
 	free(g);
 }
 
+
 void game_field(const game_t *g, cell_t *cp)
+{
+	memcpy(cp, g->cells, g->w * g->h * sizeof(cell_t));
+	copy_figure(g, cp);
+}
+
+
+void game_tick(game_t *g)
+{
+	if (g->game_over) return;
+
+	if (g->ticks >= 6) {
+		g->game_over = 1;
+		return;
+	}
+
+	if (g->ftyp == -1) {
+		gen_figure(g);
+		// collision check
+		goto tick_end;
+	}
+
+	if (g->ftyp != -1) {
+		++g->fy;
+	}
+
+tick_end:
+	++g->ticks;
+//	++g->level;
+}
+
+
+int game_move_r(game_t *g)
+{
+	if (collision(g, g->fx + 1, g->fy)) {
+		return 0;
+	}
+
+	++g->fx;
+	return 1;
+}
+
+
+int game_move_l(game_t *g)
+{
+	if (collision(g, g->fx - 1, g->fy)) {
+		return 0;
+	}
+
+	--g->fx;
+	return 1;
+}
+
+
+int game_move_rot(game_t *g)
+{
+	return 1;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+
+static void copy_figure(const game_t *g, cell_t *cp)
 {
 	int i, j;
 	cell_t cell;
-
-	memcpy(cp, g->cells, g->w * g->h * sizeof(cell_t));
 
 	if (g->ftyp == -1) {
 		return;
@@ -71,35 +139,31 @@ void game_field(const game_t *g, cell_t *cp)
 	}
 }
 
-static void gen_figure(game_t *g);
-
-void game_tick(game_t *g)
+static int collision(const game_t *g, int x, int y)
 {
-	if (g->game_over) return;
+	int i, j, k = 0;
+	cell_t cell;
 
-	if (g->ticks >= 6) {
-		g->game_over = 1;
-		return;
+	if (x < 0 || x >= g->w) return 1;
+	if (y >= g->h) return 1;
+
+	for (j = 0; j < 3; ++j) {
+		for (i = 0; i < 3; ++i) {
+			cell = g->fig[j * 3 + i];
+			if (cell == EMPTY_CELL) continue;
+			k = MAX(k, j);
+			if (g->cells[(y+j) * g->w + (x+i)] != EMPTY_CELL) {
+				return 1;
+			}
+		}
 	}
 
-	if (g->ftyp == -1) {
-		gen_figure(g);
-		goto tick_end;
-	}
+	if ((x + k) >= g->w) return 1;
 
-	if (g->ftyp != -1) {
-		++g->fy;
-	}
-
-//	g->cells[g->ticks*g->w+3] = 1;
-//	if (g->ticks > 0) {
-//		g->cells[(g->ticks-1)*g->w+3] = EMPTY_CELL;
-//	}
-
-tick_end:
-	++g->ticks;
-//	++g->level;
+	return 0;
 }
+
+
 
 /*
  *
@@ -121,6 +185,7 @@ tick_end:
 static void gen_figure(game_t *g)
 {
 	g->ftyp = rand() % 4;
+	//g->ftyp = 3;
 	memset(g->fig, EMPTY_CELL, 3*3*sizeof(cell_t));
 
 	switch (g->ftyp) {
@@ -155,4 +220,5 @@ static void gen_figure(game_t *g)
 	printf("%d %d %d\n", g->fig[3], g->fig[4], g->fig[5]);
 	printf("%d %d %d\n", g->fig[6], g->fig[7], g->fig[8]);
 }
+
 

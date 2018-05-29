@@ -28,7 +28,7 @@ Window win, root;
 GC gc;
 unsigned long black, white;
 Atom wmDeleteMessage;
-int keyESC, keyEnter;
+int keyESC, keyEnter, keyLeft, keyRight;
 void (*drawptr)(Drawable dr, int ww, int wh);
 game_t *game;
 
@@ -293,8 +293,20 @@ static int x11_loop()
 			return 0;
 		}
 
+		if (event.type==KeyPress && event.xkey.keycode==keyLeft) {
+			if (game_move_l(game)) {
+				draw_win();
+			}
+		}
+
+		if (event.type==KeyPress && event.xkey.keycode==keyRight) {
+			if (game_move_r(game)) {
+				draw_win();
+			}
+		}
+
 		if (event.type==KeyPress) {
-			printf("KeyPress: %x\n", event.xkey.keycode);
+			//printf("KeyPress: %x\n", event.xkey.keycode);
 		}
 	}
 
@@ -340,7 +352,7 @@ static void game_loop()
 	draw_win();
 
 again:
-	if (!wait_key(0)) {
+	if (!wait_key(keyEnter)) {
 		return;
 	}
 
@@ -379,6 +391,8 @@ int main(int argc, char *argv[])
 	wmDeleteMessage = XInternAtom(dis, "WM_DELETE_WINDOW", False);
 	keyESC	= XKeysymToKeycode(dis, XK_Escape);
 	keyEnter= XKeysymToKeycode(dis, XK_Return);
+	keyLeft	= XKeysymToKeycode(dis, XK_Left);
+	keyRight= XKeysymToKeycode(dis, XK_Right);
 
 	gettimeofday(&tv, NULL);
 	const_seconds0 = tv.tv_sec;
