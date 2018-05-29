@@ -26,10 +26,16 @@ int screen;
 Window win, root;
 GC gc;
 unsigned long black, white;
+Atom wmDeleteMessage;
+int keyESC, keyEnter;
+
+void (*drawptr)(Drawable dr, int ww, int wh);
+
+
 game_t *game;
 
 
-void size_hints()
+static void size_hints()
 {
 	XSizeHints* win_size_hints = XAllocSizeHints();
 	if (!win_size_hints) {
@@ -48,7 +54,7 @@ void size_hints()
 	XFree(win_size_hints);
 }
 
-void get_window_size(int *w, int *h)
+static void get_window_size(int *w, int *h)
 {
 	XWindowAttributes win_attr;
 	XGetWindowAttributes(dis, win, &win_attr);
@@ -56,8 +62,18 @@ void get_window_size(int *w, int *h)
 	*h = win_attr.height;
 }
 
+static void default_draw(Drawable dr, int ww, int wh)
+{
+	int cw = ww / 2, ch = wh / 2;
+	int left = cw - FIELD_WP/2, top = ch - FIELD_HP/2, w = FIELD_WP, h = FIELD_HP, cellw = CELL_WP;
 
-void draw(Drawable dr, int ww, int wh)
+	XSetForeground(dis, gc, 0xffff);
+	XDrawRectangle(dis, dr, gc, left-1, top-1, w+2, h+2);
+	XSetForeground(dis, gc, 0xd0d0d0);
+	XFillRectangle(dis, dr, gc, left, top, w+1, h+1);
+}
+
+static void draw(Drawable dr, int ww, int wh)
 {
 	int cw = ww / 2, ch = wh / 2;
 	int left = cw - FIELD_WP/2, top = ch - FIELD_HP/2, w = FIELD_WP, h = FIELD_HP, cellw = CELL_WP;
@@ -98,7 +114,7 @@ void draw(Drawable dr, int ww, int wh)
 
 }
 
-void draw_win()
+static void draw_win()
 {
 	int w, h;
 	int depth = DefaultDepth(dis, screen);
@@ -111,7 +127,12 @@ void draw_win()
 	XSetBackground(dis, gc, black);
 	XFillRectangle(dis, pixmap, gc, 0, 0, w, h);
 
-	draw(pixmap, w, h);
+	if (drawptr) {
+		drawptr(pixmap, w, h);
+	} else {
+		default_draw(pixmap, w, h);
+	}
+	//draw(pixmap, w, h);
 
 	XCopyArea(dis, pixmap, win, gc, 0, 0, w, h, 0, 0);
 	XFreePixmap(dis, pixmap);
@@ -120,26 +141,9 @@ void draw_win()
 }
 
 
-int main(int argc, char *argv[])
+static int init_win()
 {
-	Atom wmDeleteMessage;
 	XEvent event;
-	KeySym key;
-	char text[255];
-	int keycode;
-	struct timeval tv;
-
-	dis	= XOpenDisplay((char *)0);
-	if (!dis) {
-		fprintf(stderr, "Couldn't open X11 display\n");
-		exit(1);
-	}
-	screen	= DefaultScreen(dis);
-	black	= BlackPixel(dis,screen);
-	white	= WhitePixel(dis, screen);
-	root	= DefaultRootWindow(dis);
-	wmDeleteMessage = XInternAtom(dis, "WM_DELETE_WINDOW", False);
-	keycode	= XKeysymToKeycode(dis, XK_Escape);
 
 	win = XCreateSimpleWindow(dis, root, 0, 0, WINDOW_W, WINDOW_H, 0, None, None);
 	XSetWMProtocols(dis, win, &wmDeleteMessage, 1);
@@ -153,20 +157,65 @@ int main(int argc, char *argv[])
 
 	gc = XCreateGC(dis, win, 0, 0);
 
-
 	XSetBackground(dis, gc, black);
 	XSetForeground(dis, gc, white);
 	XClearWindow(dis, win);
 	XMapRaised(dis, win);
+	XFlush(dis);
 
-	gettimeofday(&tv, NULL);
-	srand(tv.tv_sec & tv.tv_usec);
+	while (XPending(dis)) {
+		XNextEvent(dis, &event);
 
-	game = game_create(FIELD_W, FIELD_H);
-	if ( !game ) {
-		fprintf(stderr, "game_create - out of memory\n");
-		exit(1);
+		if (event.type==ClientMessage && event.xclient.data.l[0] == wmDeleteMessage) {
+			return 0;
+		}
+
+		if (event.type==KeyPress && event.xkey.keycode==keyESC) {
+			return 0;
+		}
+
+		if (event.type==Expose && event.xexpose.count==0) {
+			draw_win();
+		}
 	}
+
+	return 1;
+}
+
+// 0 - exit, 1 - key
+static int wait_key(int keycode)
+{
+	XEvent event;
+	while (1) {
+		XNextEvent(dis, &event);
+
+		if (event.type==ClientMessage && event.xclient.data.l[0] == wmDeleteMessage) {
+			return 0;
+		}
+
+		if (event.type==KeyPress && event.xkey.keycode==keycode) {
+			return 1;
+		}
+
+		if (event.type==Expose && event.xexpose.count==0) {
+			draw_win();
+		}
+	}
+}
+
+
+static void game_loop()
+{
+	XEvent event;
+
+	if (!wait_key(keyEnter)) {
+		return;
+	}
+
+	drawptr = draw;
+	draw_win();
+
+	printf("main loop\n");
 
 	while(1) {
 		XNextEvent(dis, &event);
@@ -181,7 +230,7 @@ int main(int argc, char *argv[])
 			//printf("Expose\n");
 		}
 
-		if (event.type==KeyPress && event.xkey.keycode==keycode) {
+		if (event.type==KeyPress && event.xkey.keycode==keyESC) {
 			break;
 			//printf("KeyPress\n");
 		}
@@ -201,10 +250,48 @@ int main(int argc, char *argv[])
 			//break;
 		}
 	}
+}
+
+
+int main(int argc, char *argv[])
+{
+	KeySym key;
+	char text[255];
+	struct timeval tv;
+
+	dis	= XOpenDisplay((char *)0);
+	if (!dis) {
+		fprintf(stderr, "Couldn't open X11 display\n");
+		exit(1);
+	}
+
+	screen	= DefaultScreen(dis);
+	black	= BlackPixel(dis,screen);
+	white	= WhitePixel(dis, screen);
+	root	= DefaultRootWindow(dis);
+	wmDeleteMessage = XInternAtom(dis, "WM_DELETE_WINDOW", False);
+	keyESC	= XKeysymToKeycode(dis, XK_Escape);
+	keyEnter= XKeysymToKeycode(dis, XK_Return);
+
+	gettimeofday(&tv, NULL);
+	srand(tv.tv_sec & tv.tv_usec);
+
+	game = game_create(FIELD_W, FIELD_H);
+	if ( !game ) {
+		fprintf(stderr, "game_create - out of memory\n");
+		exit(1);
+	}
+
+	if (!init_win()) {
+		goto main_exit;
+	}
+
+	game_loop();
 
 	//printf("%x, %x\n", game, game->cells);
 	game_destroy(game);
 
+main_exit:
 	XFreeGC(dis, gc);
 	XDestroyWindow(dis, win);
 	XCloseDisplay(dis);
