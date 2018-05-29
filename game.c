@@ -12,6 +12,8 @@ game_t *game_create(int w, int h)
 	g->ticks = 0;
 	g->w = w;
 	g->h = h;
+	g->level = 0;
+	g->score = 0;
 
 	memset(g->cells, EMPTY_CELL, w*h);
 
@@ -33,6 +35,7 @@ const cell_t *game_field(const game_t *g)
 
 void game_tick(game_t *g)
 {
+	++g->ticks;
 }
 
 /*
