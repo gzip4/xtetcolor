@@ -29,7 +29,8 @@ GC gc;
 unsigned long black, white;
 Atom wmDeleteMessage;
 int keyESC, keyEnter;
-time_t seconds0;
+time_t const_seconds0;
+suseconds_t const_useconds0;
 void (*drawptr)(Drawable dr, int ww, int wh);
 game_t *game;
 
@@ -38,7 +39,7 @@ static time_t getuseconds()
 {
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
-	return (tv.tv_sec - seconds0)*1000000+tv.tv_usec;
+	return (tv.tv_sec - const_seconds0)*1000000+tv.tv_usec-const_useconds0;
 }
 
 
@@ -363,7 +364,8 @@ int main(int argc, char *argv[])
 	keyEnter= XKeysymToKeycode(dis, XK_Return);
 
 	gettimeofday(&tv, NULL);
-	seconds0 = tv.tv_sec;
+	const_seconds0 = tv.tv_sec;
+	const_useconds0 = tv.tv_usec;
 	srand(tv.tv_sec & tv.tv_usec);
 
 	game = game_create(FIELD_W, FIELD_H);
