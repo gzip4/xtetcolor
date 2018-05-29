@@ -19,6 +19,7 @@ game_t *game_create(int w, int h)
 	g->h = h;
 	g->level = 0;
 	g->score = 0;
+	g->game_over = 0;
 
 	memset(g->cells, EMPTY_CELL, w*h);
 

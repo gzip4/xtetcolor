@@ -12,6 +12,7 @@ typedef struct _game_s
 	int w, h;
 	int level;
 	int score;
+	int game_over;
 } game_t;
 
 
