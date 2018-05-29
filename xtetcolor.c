@@ -28,7 +28,7 @@ Window win, root;
 GC gc;
 unsigned long black, white;
 Atom wmDeleteMessage;
-int keyESC, keyEnter, keyLeft, keyRight, keySpace;
+int keyESC, keyEnter, keyLeft, keyRight, keySpace, keyUp, keyDown;
 void (*drawptr)(Drawable dr, int ww, int wh);
 game_t *game;
 
@@ -305,6 +305,18 @@ static int x11_loop()
 			}
 		}
 
+		if (event.type==KeyPress && event.xkey.keycode==keyUp) {
+			if (game_move_rot(game)) {
+				draw_win();
+			}
+		}
+
+		if (event.type==KeyPress && event.xkey.keycode==keyDown) {
+			if (game_move_rot(game)) {
+				draw_win();
+			}
+		}
+
 		// XXX: key?????? spacebar
 		if (event.type==KeyPress && event.xkey.keycode==0x41) {
 			if (game_move_down(game)) {
@@ -402,6 +414,8 @@ int main(int argc, char *argv[])
 	keyLeft	= XKeysymToKeycode(dis, XK_Left);
 	keyRight= XKeysymToKeycode(dis, XK_Right);
 	keySpace= XKeysymToKeycode(dis, XK_KP_Space);
+	keyUp	= XKeysymToKeycode(dis, XK_Up);
+	keyDown	= XKeysymToKeycode(dis, XK_Down);
 
 	gettimeofday(&tv, NULL);
 	const_seconds0 = tv.tv_sec;
