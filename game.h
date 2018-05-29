@@ -12,6 +12,10 @@ typedef struct _game_s
 	int level;
 	int score;
 	int game_over;
+
+	int ftyp;
+	int fx, fy;
+	cell_t *fig;
 } game_t;
 
 
