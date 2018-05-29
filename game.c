@@ -184,7 +184,7 @@ static int collision(const game_t *g, int x, int y)
 		for (i = 0; i < 3; ++i) {
 			cell = g->fig[j * 3 + i];
 			if (cell == EMPTY_CELL) continue;
-			k = MAX(k, j);
+			k = MAX(k, i);
 			if (g->cells[(y+j) * g->w + (x+i)] != EMPTY_CELL) {
 				return 1;
 			}
