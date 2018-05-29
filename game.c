@@ -11,6 +11,7 @@
 static void gen_figure(game_t *g);
 static int collision(const game_t *g, int x, int y);
 static void copy_figure(const game_t *g, cell_t *cp);
+static void clear_figure(game_t *g);
 
 
 game_t *game_create(int w, int h)
@@ -68,18 +69,26 @@ void game_tick(game_t *g)
 {
 	if (g->game_over) return;
 
-	if (g->ticks >= 6) {
+	if (g->ticks >= 9000) {
 		g->game_over = 1;
 		return;
 	}
 
 	if (g->ftyp == -1) {
 		gen_figure(g);
-		// collision check
+		if (collision(g, g->fx, g->fy)) {
+			copy_figure(g, g->cells);
+			clear_figure(g);
+			g->game_over = 1;
+			return;
+		}
 		goto tick_end;
 	}
 
-	if (g->ftyp != -1) {
+	if (collision(g, g->fx, g->fy + 1)) {
+		copy_figure(g, g->cells);
+		clear_figure(g);
+	} else {
 		++g->fy;
 	}
 
@@ -118,6 +127,16 @@ int game_move_rot(game_t *g)
 
 
 ////////////////////////////////////////////////////////////////////////////
+
+static void clear_figure(game_t *g)
+{
+	g->ftyp = -1;
+	g->fx = -1;
+	g->fy = -1;
+
+	memset(g->fig, EMPTY_CELL, 3*3*sizeof(cell_t));
+}
+
 
 static void copy_figure(const game_t *g, cell_t *cp)
 {
