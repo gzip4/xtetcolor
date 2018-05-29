@@ -35,9 +35,9 @@ void game_destroy(game_t *g)
 	free(g);
 }
 
-const cell_t *game_field(const game_t *g)
+void game_field(const game_t *g, cell_t *cp)
 {
-	return g->cells;
+	memcpy(cp, g->cells, g->w*g->h*sizeof(cell_t));
 }
 
 void game_tick(game_t *g)

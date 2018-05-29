@@ -109,8 +109,10 @@ static void draw(Drawable dr, int ww, int wh)
 	int left = cw - FIELD_WP/2, top = ch - FIELD_HP/2, w = FIELD_WP, h = FIELD_HP, cellw = CELL_WP;
 	int colors[] = { 0xff0000, 0xff00, 0xff, 0xff00ff, 0xffff00, 0xffff, 0, 0 };
 	int i, j, r;
-	const cell_t *cells = game_field(game);
 	cell_t cell;
+	cell_t cells[FIELD_W * FIELD_H * sizeof(cell_t)];
+
+	game_field(game, &cells[0]);
 
 	XSetForeground(dis, gc, 0xffff);
 	XDrawRectangle(dis, dr, gc, left-1, top-1, w+2, h+2);
