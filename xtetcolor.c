@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include <sys/time.h>
 
 #include <X11/Xlib.h>
@@ -28,11 +29,17 @@ GC gc;
 unsigned long black, white;
 Atom wmDeleteMessage;
 int keyESC, keyEnter;
-
+time_t seconds0;
 void (*drawptr)(Drawable dr, int ww, int wh);
-
-
 game_t *game;
+
+
+static time_t getuseconds()
+{
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return (tv.tv_sec - seconds0)*1000000+tv.tv_usec;
+}
 
 
 static void size_hints()
@@ -132,12 +139,13 @@ static void draw_win()
 	} else {
 		default_draw(pixmap, w, h);
 	}
-	//draw(pixmap, w, h);
 
 	XCopyArea(dis, pixmap, win, gc, 0, 0, w, h, 0, 0);
 	XFreePixmap(dis, pixmap);
 
 	//XDrawImageString(dis, win, gc, 10, 10, "pixmap", 6);
+
+	XFlush(dis);
 }
 
 
@@ -203,6 +211,63 @@ static int wait_key(int keycode)
 	}
 }
 
+static int test_loop()
+{
+	XEvent event;
+
+	while(XPending(dis)) {
+		XNextEvent(dis, &event);
+
+		if (event.type==ClientMessage && event.xclient.data.l[0] == wmDeleteMessage) {
+			return 0;
+		}
+
+		if (event.type==Expose && event.xexpose.count==0) {
+			draw_win();
+		}
+
+		if (event.type==KeyPress && event.xkey.keycode==keyESC) {
+			return 0;
+		}
+
+		if (event.type==KeyPress) {
+			printf("KeyPress: %x\n", event.xkey.keycode);
+		}
+	}
+
+	return 1;
+}
+
+
+static int time_loop()
+{
+	int x11_fd, num_ready_fds;
+	fd_set in_fds;
+	struct timeval tv;
+
+	x11_fd = ConnectionNumber(dis);
+
+	while(1) {
+		XFlush(dis);
+
+		FD_ZERO(&in_fds);
+		FD_SET(x11_fd, &in_fds);
+		tv.tv_usec = 500000;
+		tv.tv_sec = 0;
+		num_ready_fds = select(x11_fd + 1, &in_fds, NULL, NULL, &tv);
+		if (num_ready_fds == 0) {
+			//gettimeofday(&tv, NULL);
+			//printf("%d %d\n", tv.tv_sec, tv.tv_usec);
+			printf("%d\n", getuseconds());
+			//printf("."); fflush(stdout);
+		}
+
+		if (!test_loop()) {
+			return 0;
+		}
+	}
+}
+
 
 static void game_loop()
 {
@@ -216,6 +281,9 @@ static void game_loop()
 	draw_win();
 
 	printf("main loop\n");
+
+	time_loop();
+	return;
 
 	while(1) {
 		XNextEvent(dis, &event);
@@ -274,6 +342,7 @@ int main(int argc, char *argv[])
 	keyEnter= XKeysymToKeycode(dis, XK_Return);
 
 	gettimeofday(&tv, NULL);
+	seconds0 = tv.tv_sec;
 	srand(tv.tv_sec & tv.tv_usec);
 
 	game = game_create(FIELD_W, FIELD_H);
