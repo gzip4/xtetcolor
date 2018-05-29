@@ -42,6 +42,26 @@ static time_t getuseconds()
 }
 
 
+static time_t getmseconds()
+{
+	return getuseconds() / 1000;
+}
+
+
+static int since_last(int msec)
+{
+	static time_t last = (time_t) 0;
+	if (!last) last = getmseconds();
+
+	time_t now = getmseconds();
+	if ((now - last) > msec) {
+		last = now;
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
 static void size_hints()
 {
 	XSizeHints* win_size_hints = XAllocSizeHints();
@@ -215,6 +235,9 @@ static int test_loop()
 {
 	XEvent event;
 
+	if (since_last(2000))
+		printf("*%d\n", getmseconds());
+
 	while(XPending(dis)) {
 		XNextEvent(dis, &event);
 
@@ -252,14 +275,12 @@ static int time_loop()
 
 		FD_ZERO(&in_fds);
 		FD_SET(x11_fd, &in_fds);
-		tv.tv_usec = 500000;
+		tv.tv_usec = 100000;	// 0.1 sec
 		tv.tv_sec = 0;
 		num_ready_fds = select(x11_fd + 1, &in_fds, NULL, NULL, &tv);
 		if (num_ready_fds == 0) {
-			//gettimeofday(&tv, NULL);
-			//printf("%d %d\n", tv.tv_sec, tv.tv_usec);
-			printf("%d\n", getuseconds());
-			//printf("."); fflush(stdout);
+			if (since_last(2000))
+				printf("%d\n", getmseconds());
 		}
 
 		if (!test_loop()) {
