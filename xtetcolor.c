@@ -364,8 +364,6 @@ again:
 
 int main(int argc, char *argv[])
 {
-	KeySym key;
-	char text[255];
 	struct timeval tv;
 
 	dis	= XOpenDisplay((char *)0);
@@ -387,14 +385,11 @@ int main(int argc, char *argv[])
 	const_useconds0 = tv.tv_usec;
 	srand(tv.tv_sec & tv.tv_usec);
 
-
 	if (!init_win()) {
 		goto main_exit;
 	}
 
 	game_loop();
-
-	//printf("%x, %x\n", game, game->cells);
 
 main_exit:
 	XFreeGC(dis, gc);
