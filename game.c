@@ -23,7 +23,8 @@ game_t *game_create(int w, int h)
 
 	memset(g->cells, EMPTY_CELL, w*h);
 
-	g->cells[3*w+1] = 1;
+	//g->cells[1] = 1;
+	//g->cells[3*w+1] = 1;
 
 	return g;
 }
@@ -41,6 +42,15 @@ const cell_t *game_field(const game_t *g)
 
 void game_tick(game_t *g)
 {
+	if (g->game_over) return;
+
+	if (g->ticks > g->h) {
+		g->game_over = 1;
+		return;
+	}
+
+	g->cells[g->ticks*g->w+3] = 1;
+
 	++g->ticks;
 }
 

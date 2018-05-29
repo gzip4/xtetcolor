@@ -90,6 +90,7 @@ static void get_window_size(int *w, int *h)
 	*h = win_attr.height;
 }
 
+
 static void default_draw(Drawable dr, int ww, int wh)
 {
 	int cw = ww / 2, ch = wh / 2;
@@ -101,13 +102,14 @@ static void default_draw(Drawable dr, int ww, int wh)
 	XFillRectangle(dis, dr, gc, left, top, w+1, h+1);
 }
 
+
 static void draw(Drawable dr, int ww, int wh)
 {
 	int cw = ww / 2, ch = wh / 2;
 	int left = cw - FIELD_WP/2, top = ch - FIELD_HP/2, w = FIELD_WP, h = FIELD_HP, cellw = CELL_WP;
 	int colors[] = { 0xff0000, 0xff00, 0xff, 0xff00ff, 0xffff00, 0xffff, 0, 0 };
 	int i, j, r;
-	const cell_t * cells = game_field(game);
+	const cell_t *cells = game_field(game);
 	cell_t cell;
 
 	XSetForeground(dis, gc, 0xffff);
@@ -116,6 +118,7 @@ static void draw(Drawable dr, int ww, int wh)
 	XFillRectangle(dis, dr, gc, left, top, w+1, h+1);
 
 	for (j = 0; j < FIELD_H; ++j) {
+		//printf("%d: ", j);
 		for (i = 0; i < FIELD_W; ++i) {
 			cell = cells[j * FIELD_W + i];
 			if (cell == EMPTY_CELL) continue;
@@ -123,7 +126,9 @@ static void draw(Drawable dr, int ww, int wh)
 			XFillRectangle(dis, dr, gc, left+i*cellw, top+j*cellw, cellw, cellw);
 			XSetForeground(dis, gc, black);
 			XDrawRectangle(dis, dr, gc, left+i*cellw, top+j*cellw, cellw, cellw);
+			//printf(" %d(%d)", i, cell);
 		}
+		//printf("\n");
 	}
 
 
@@ -141,6 +146,7 @@ static void draw(Drawable dr, int ww, int wh)
 	}
 
 }
+
 
 static void draw_win()
 {
@@ -232,14 +238,23 @@ static int wait_key(int keycode)
 	}
 }
 
+static void check_for_tick()
+{
+	if (since_last(1000)) {
+		game_tick(game);
+		draw_win();
+	}
+}
+
+
 static int test_loop()
 {
 	XEvent event;
 
-	if (since_last(2000))
-		printf("*%d\n", getmseconds());
+	check_for_tick();
 
-	while(XPending(dis)) {
+	while(XPending(dis))
+	{
 		XNextEvent(dis, &event);
 
 		if (event.type==ClientMessage && event.xclient.data.l[0] == wmDeleteMessage) {
@@ -280,12 +295,17 @@ static int time_loop()
 		tv.tv_sec = 0;
 		num_ready_fds = select(x11_fd + 1, &in_fds, NULL, NULL, &tv);
 		if (num_ready_fds == 0) {
-			if (since_last(2000))
-				printf("%d\n", getmseconds());
+			check_for_tick();
+			//if (since_last(2000))
+			//	printf("%d\n", getmseconds());
 		}
 
 		if (!test_loop()) {
 			return 0;
+		}
+
+		if (game->game_over) {
+			return 1;
 		}
 	}
 }
@@ -293,10 +313,18 @@ static int time_loop()
 
 static void game_loop()
 {
-	XEvent event;
+	drawptr = NULL;
+	draw_win();
 
+again:
 	if (!wait_key(keyEnter)) {
 		return;
+	}
+
+	game = game_create(FIELD_W, FIELD_H);
+	if ( !game ) {
+		perror("game_create");
+		exit(1);
 	}
 
 	drawptr = draw;
@@ -304,42 +332,12 @@ static void game_loop()
 
 	printf("main loop\n");
 
-	time_loop();
-	return;
-
-	while(1) {
-		XNextEvent(dis, &event);
-		//printf("event.type=%x\n", event.type);
-
-		if (event.type==ClientMessage && event.xclient.data.l[0] == wmDeleteMessage) {
-			break;
-		}
-
-		if (event.type==Expose && event.xexpose.count==0) {
-			draw_win();
-			//printf("Expose\n");
-		}
-
-		if (event.type==KeyPress && event.xkey.keycode==keyESC) {
-			break;
-			//printf("KeyPress\n");
-		}
-
-// l:64 r:66 u:62 d:68
-
-		if (event.type==KeyPress) {
-			printf("KeyPress: %x\n", event.xkey.keycode);
-		}
-
-		//if (event.type==KeyRelease && event.xkey.keycode==keycode) {
-			//printf("KeyRelease\n");
-		//}
-
-		if (event.type==ButtonPress) {
-			draw_win();
-			//break;
-		}
+	if (!time_loop()) {
+		return;
 	}
+
+	game_destroy(game);
+	goto again;
 }
 
 
@@ -368,11 +366,6 @@ int main(int argc, char *argv[])
 	const_useconds0 = tv.tv_usec;
 	srand(tv.tv_sec & tv.tv_usec);
 
-	game = game_create(FIELD_W, FIELD_H);
-	if ( !game ) {
-		fprintf(stderr, "game_create - out of memory\n");
-		exit(1);
-	}
 
 	if (!init_win()) {
 		goto main_exit;
@@ -381,7 +374,6 @@ int main(int argc, char *argv[])
 	game_loop();
 
 	//printf("%x, %x\n", game, game->cells);
-	game_destroy(game);
 
 main_exit:
 	XFreeGC(dis, gc);

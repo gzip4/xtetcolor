@@ -1,9 +1,8 @@
 #ifndef GAME_H
 #define GAME_H
 
-#define EMPTY_CELL (-1)
-
 typedef char cell_t;
+#define EMPTY_CELL ((cell_t)(-1))
 
 typedef struct _game_s
 {
