@@ -7,6 +7,9 @@
 #ifndef MAX
 #define MAX(x,y) ((x)>(y)?(x):(y))
 #endif
+#ifndef MIN
+#define MIN(x,y) ((x)<(y)?(x):(y))
+#endif
 
 static void gen_figure(game_t *g);
 static int collision(const game_t *g, int x, int y, cell_t *fig);
@@ -122,6 +125,90 @@ int game_move_l(game_t *g)
 
 int game_move_rot(game_t *g)
 {
+	int x, y;
+	cell_t rc[3 * 3];
+
+	memset(rc, EMPTY_CELL, 3*3*sizeof(cell_t));
+
+	switch (g->ftyp) {
+	case 0:
+		return 0;
+
+	case 1:
+		if (g->fig[1] == EMPTY_CELL) {
+			rc[1] = g->fig[0];
+			rc[0] = g->fig[3];
+		} else {
+			rc[0] = g->fig[0];
+			rc[3] = g->fig[1];
+		}
+		if (collision(g, g->fx, g->fy, rc)) {
+			return 0;
+		}
+		break;
+
+	case 2:
+		//printf("#%d %d %d\n", g->fig[0], g->fig[1], g->fig[2]);
+		//printf("#%d %d %d\n", g->fig[3], g->fig[4], g->fig[5]);
+		//printf("#%d %d %d\n", g->fig[6], g->fig[7], g->fig[8]);
+		if (g->fig[0] == EMPTY_CELL) {	// horiz
+			rc[0] = g->fig[3];
+			rc[3] = g->fig[4];
+			rc[6] = g->fig[5];
+			x = g->fx + 1;
+		} else {
+			rc[5] = g->fig[0];
+			rc[4] = g->fig[3];
+			rc[3] = g->fig[6];
+			x = g->fx - 1;
+		}
+		//printf("# %d %d %d\n", rc[0], rc[1], rc[2]);
+		//printf("# %d %d %d\n", rc[3], rc[4], rc[5]);
+		//printf("# %d %d %d\n", rc[6], rc[7], rc[8]);
+		if (collision(g, x, g->fy, rc)) {
+			return 0;
+		}
+		g->fx = x;
+		break;
+
+	case 3:
+		if (g->fig[0] != EMPTY_CELL && g->fig[3] != EMPTY_CELL && g->fig[4] != EMPTY_CELL) {
+			rc[1] = g->fig[0];
+			rc[0] = g->fig[3];
+			rc[3] = g->fig[4];
+			x = g->fx;
+			y = g->fy;
+		} else if (g->fig[0] != EMPTY_CELL && g->fig[1] != EMPTY_CELL && g->fig[3] != EMPTY_CELL) {
+			rc[4] = g->fig[1];
+			rc[1] = g->fig[0];
+			rc[0] = g->fig[3];
+			x = g->fx - 1;
+			y = g->fy;
+		} else if (g->fig[1] != EMPTY_CELL && g->fig[4] != EMPTY_CELL && g->fig[0] != EMPTY_CELL) {
+			rc[3] = g->fig[4];
+			rc[4] = g->fig[1];
+			rc[1] = g->fig[0];
+			x = g->fx;
+			y = g->fy;
+		} else if (g->fig[3] != EMPTY_CELL && g->fig[4] != EMPTY_CELL && g->fig[1] != EMPTY_CELL) {
+			rc[0] = g->fig[3];
+			rc[3] = g->fig[4];
+			rc[4] = g->fig[1];
+			x = g->fx + 1;
+			y = g->fy;
+		}
+		if (collision(g, x, y, rc)) {
+			return 0;
+		}
+		g->fx = x;
+		g->fy = y;
+		break;
+
+	default:
+		return 0;
+	}
+
+	memcpy(g->fig, rc, 3*3*sizeof(cell_t));
 	return 1;
 }
 
@@ -222,8 +309,8 @@ static int collision(const game_t *g, int x, int y, cell_t *fig)
 
 static void gen_figure(game_t *g)
 {
-	g->ftyp = rand() % 4;
-	//g->ftyp = 3;
+	//g->ftyp = rand() % 4;
+	g->ftyp = 3;
 	memset(g->fig, EMPTY_CELL, 3*3*sizeof(cell_t));
 
 	switch (g->ftyp) {
@@ -253,10 +340,10 @@ static void gen_figure(game_t *g)
 		g->fig[4] = rand() % 6;
 		break;
 	}
-	printf("gen: %d\n", g->ftyp);
-	printf("%d %d %d\n", g->fig[0], g->fig[1], g->fig[2]);
-	printf("%d %d %d\n", g->fig[3], g->fig[4], g->fig[5]);
-	printf("%d %d %d\n", g->fig[6], g->fig[7], g->fig[8]);
+	//printf("gen: %d\n", g->ftyp);
+	//printf("%d %d %d\n", g->fig[0], g->fig[1], g->fig[2]);
+	//printf("%d %d %d\n", g->fig[3], g->fig[4], g->fig[5]);
+	//printf("%d %d %d\n", g->fig[6], g->fig[7], g->fig[8]);
 }
 
 
