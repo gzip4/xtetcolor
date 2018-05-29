@@ -351,8 +351,6 @@ again:
 	drawptr = draw;
 	draw_win();
 
-	printf("main loop\n");
-
 	if (!time_loop()) {
 		return;
 	}
