@@ -6,8 +6,8 @@ Tested on:
   - FreeBSD11/amd64
 
 Controls:
-  ENTER       - start game
-  Left/Right  - move figure
-  Up/Down     - rotate figure
-  Space       - drop figure
-  ESC         - leave game
+  * ENTER       - start game
+  * Left/Right  - move figure
+  * Up/Down     - rotate figure
+  * Space       - drop figure
+  * ESC         - leave game
