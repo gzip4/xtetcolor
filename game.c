@@ -15,7 +15,7 @@ static void gen_figure(game_t *g);
 static int collision(const game_t *g, int x, int y, cell_t *fig);
 static void copy_figure(const game_t *g, cell_t *cp);
 static void clear_figure(game_t *g);
-static void check_combinations(game_t *g);
+static int check_combinations(game_t *g);
 static int check_color(game_t *g, cell_t *buff, char *coords, int ncoords);
 
 
@@ -44,6 +44,7 @@ game_t *game_create(int w, int h)
 	g->score = 0;
 	g->game_over = 0;
 	g->combi_cb = NULL;
+	g->ncomb = 0;
 
 	memset(g->cells, EMPTY_CELL, w*h);
 	clear_figure(g);
@@ -99,7 +100,11 @@ void game_tick(game_t *g)
 		copy_figure(g, g->cells);
 		clear_figure(g);
 
-		check_combinations(g);
+		g->ncomb = 0;
+		while (check_combinations(g)) {
+			++g->ncomb;
+		}
+		g->ncomb = 0;
 	} else {
 		// advance figure
 		++g->fy;
@@ -349,14 +354,15 @@ static int check_color(game_t *g, cell_t *buff, char *coords, int ncoords)
 
 #define COORDS_BUFFSZ	512
 
-static void check_combinations(game_t *g)
+static int check_combinations(game_t *g)
 {
-	int x, y, clr, i, ncoords = 0;
-	size_t buffsz = g->w * g->h;
+	int x, y, yy, clr, i, ncoords = 0;
+	const int w = g->w;
+	const size_t buffsz = g->w * g->h;
+	cell_t cell;
 
 	cell_t *buff = (cell_t *) malloc(buffsz);
 	char *coords = (char *) malloc(COORDS_BUFFSZ);
-	//memset(coords, (char)-1, COORDS_BUFFSZ);
 
 	for (clr = 0; clr < 6; ++clr) {
 		memset(buff, 0, buffsz);
@@ -365,32 +371,27 @@ static void check_combinations(game_t *g)
 		}
 
 		ncoords = check_color(g, buff, coords, ncoords);
-
-/*
-		printf("\nCOLOR %d:\n", clr);
-		for (y = 0; y < g->h; ++y) {
-			printf("%02d: ", y);
-			for (x = 0; x < g->w; ++x) {
-				printf("%d ", buff[y * g->w + x]);
-			}
-			printf("\n");
-		}
-*/
 	}
 
-/*
-	for (i = 0; i < COORDS_BUFFSZ; i += 2) {
-		if (coords[i] == (char)-1) break;
-		printf("x=%d,y=%d ", coords[i], coords[i+1]);
-	}
-	printf("\n");
-*/
-
+	// callback if any
 	if (ncoords > 0 && g->combi_cb) {
 		(*g->combi_cb)(coords, ncoords);
 	}
 
+	// delete cell and slide whole column down
+	for (i = 0; i < ncoords; i += 2) {
+		x = coords[i];
+		y = coords[i + 1];
+
+		for (yy = y; yy >= 0; --yy) {
+			cell = (yy == 0) ? EMPTY_CELL : g->cells[(yy - 1) * w + x];
+			g->cells[yy * w + x] = cell;
+		}
+	}
+
 	free(coords);
 	free(buff);
+
+	return ncoords;
 }
 

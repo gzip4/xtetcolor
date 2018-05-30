@@ -12,6 +12,7 @@ typedef struct _game_s
 	int level;
 	int score;
 	int game_over;
+	int ncomb;
 
 	int ftyp;
 	int fx, fy;
