@@ -22,13 +22,13 @@ game_t *game_create(int w, int h)
 	game_t *g = (game_t *) malloc( sizeof(game_t) );
 	if ( !g ) return NULL;
 
-	g->cells = (cell_t *) malloc( w*h*sizeof(cell_t) );
+	g->cells = (cell_t *) malloc( w * h );
 	if ( !g->cells ) {
 		free(g);
 		return NULL;
 	}
 
-	g->fig = (cell_t *) malloc( 3*3*sizeof(cell_t) );
+	g->fig = (cell_t *) malloc( 9 );
 	if ( !g->fig ) {
 		free(g->cells);
 		free(g);
@@ -42,12 +42,8 @@ game_t *game_create(int w, int h)
 	g->score = 0;
 	g->game_over = 0;
 
-	g->ftyp = -1;
-	g->fx = -1;
-	g->fy = -1;
-
-	memset(g->cells, EMPTY_CELL, w*h*sizeof(cell_t));
-	memset(g->fig,   EMPTY_CELL, 3*3*sizeof(cell_t));
+	memset(g->cells, EMPTY_CELL, w*h);
+	clear_figure(g);
 
 	return g;
 }
@@ -63,7 +59,7 @@ void game_destroy(game_t *g)
 
 void game_field(const game_t *g, cell_t *cp)
 {
-	memcpy(cp, g->cells, g->w * g->h * sizeof(cell_t));
+	memcpy(cp, g->cells, g->w * g->h);
 	copy_figure(g, cp);
 }
 
@@ -77,6 +73,12 @@ void game_tick(game_t *g)
 		return;
 	}
 
+	// XXX: level test
+	if (g->ticks > 1 && g->ticks % 20 == 0) {
+		++g->level;
+	}
+
+	// no figure
 	if (g->ftyp == -1) {
 		gen_figure(g);
 		if (collision(g, g->fx, g->fy, NULL)) {
@@ -88,10 +90,13 @@ void game_tick(game_t *g)
 		goto tick_end;
 	}
 
+	// have figure
 	if (collision(g, g->fx, g->fy + 1, NULL)) {
+		// land figure
 		copy_figure(g, g->cells);
 		clear_figure(g);
 	} else {
+		// advance figure
 		++g->fy;
 	}
 
@@ -122,93 +127,36 @@ int game_move_l(game_t *g)
 	return 1;
 }
 
-
+/*  0 1 2  6 3 0  2 5 8
+ *  3 4 5  7 4 1  1 4 7
+ *  6 7 8  8 5 2  0 3 6
+ *  SRC    LEFT   RIGHT
+ */
 int game_move_rot(game_t *g)
 {
-	int x, y;
+	int i;
+	int rr[] = {2, 5, 8, 1, 4, 7, 0, 3, 6};		// right rotation
+	//int lr[] = {6, 3, 0, 7, 4, 1, 8, 5, 2};	// left rotation
 	cell_t rc[3 * 3];
 
-	memset(rc, EMPTY_CELL, 3*3*sizeof(cell_t));
+	memset(rc, EMPTY_CELL, 9);
 
 	switch (g->ftyp) {
-	case 0:
-		return 0;
-
 	case 1:
-		if (g->fig[1] == EMPTY_CELL) {
-			rc[1] = g->fig[0];
-			rc[0] = g->fig[3];
-		} else {
-			rc[0] = g->fig[0];
-			rc[3] = g->fig[1];
+	case 2:
+	case 3:
+		for (i = 0; i < 9; ++i) {
+			rc[rr[i]] = g->fig[i];
 		}
 		if (collision(g, g->fx, g->fy, rc)) {
 			return 0;
 		}
 		break;
-
-	case 2:
-		//printf("#%d %d %d\n", g->fig[0], g->fig[1], g->fig[2]);
-		//printf("#%d %d %d\n", g->fig[3], g->fig[4], g->fig[5]);
-		//printf("#%d %d %d\n", g->fig[6], g->fig[7], g->fig[8]);
-		if (g->fig[0] == EMPTY_CELL) {	// horiz
-			rc[0] = g->fig[3];
-			rc[3] = g->fig[4];
-			rc[6] = g->fig[5];
-			x = g->fx + 1;
-		} else {
-			rc[5] = g->fig[0];
-			rc[4] = g->fig[3];
-			rc[3] = g->fig[6];
-			x = g->fx - 1;
-		}
-		//printf("# %d %d %d\n", rc[0], rc[1], rc[2]);
-		//printf("# %d %d %d\n", rc[3], rc[4], rc[5]);
-		//printf("# %d %d %d\n", rc[6], rc[7], rc[8]);
-		if (collision(g, x, g->fy, rc)) {
-			return 0;
-		}
-		g->fx = x;
-		break;
-
-	case 3:
-		if (g->fig[0] != EMPTY_CELL && g->fig[3] != EMPTY_CELL && g->fig[4] != EMPTY_CELL) {
-			rc[1] = g->fig[0];
-			rc[0] = g->fig[3];
-			rc[3] = g->fig[4];
-			x = g->fx;
-			y = g->fy;
-		} else if (g->fig[0] != EMPTY_CELL && g->fig[1] != EMPTY_CELL && g->fig[3] != EMPTY_CELL) {
-			rc[4] = g->fig[1];
-			rc[1] = g->fig[0];
-			rc[0] = g->fig[3];
-			x = g->fx - 1;
-			y = g->fy;
-		} else if (g->fig[1] != EMPTY_CELL && g->fig[4] != EMPTY_CELL && g->fig[0] != EMPTY_CELL) {
-			rc[3] = g->fig[4];
-			rc[4] = g->fig[1];
-			rc[1] = g->fig[0];
-			x = g->fx;
-			y = g->fy;
-		} else if (g->fig[3] != EMPTY_CELL && g->fig[4] != EMPTY_CELL && g->fig[1] != EMPTY_CELL) {
-			rc[0] = g->fig[3];
-			rc[3] = g->fig[4];
-			rc[4] = g->fig[1];
-			x = g->fx + 1;
-			y = g->fy;
-		}
-		if (collision(g, x, y, rc)) {
-			return 0;
-		}
-		g->fx = x;
-		g->fy = y;
-		break;
-
 	default:
-		return 0;
+		return 0;	// do not rotate single cell
 	}
 
-	memcpy(g->fig, rc, 3*3*sizeof(cell_t));
+	memcpy(g->fig, rc, 9);
 	return 1;
 }
 
@@ -235,36 +183,36 @@ static void clear_figure(game_t *g)
 	g->fx = -1;
 	g->fy = -1;
 
-	memset(g->fig, EMPTY_CELL, 3*3*sizeof(cell_t));
+	memset(g->fig, EMPTY_CELL, 9);
 }
 
 
 static void copy_figure(const game_t *g, cell_t *cp)
 {
-	int i, j;
+	int i, j, x = g->fx, y = g->fy, w = g->w;
 	cell_t cell;
 
 	if (g->ftyp == -1) {
 		return;
 	}
 
-	// copy figure
-	for (j = 0; j < 3; ++j) {
-		for (i = 0; i < 3; ++i) {
-			cell = g->fig[j * 3 + i];
-			if (cell != EMPTY_CELL) {
-				cp[(g->fy+j) * g->w + (g->fx+i)] = cell;
-			}
-		}
-	}
+	cell = g->fig[0]; if (cell != EMPTY_CELL) cp[(y+0)*w+(x+0)] = cell;
+	cell = g->fig[1]; if (cell != EMPTY_CELL) cp[(y+0)*w+(x+1)] = cell;
+	cell = g->fig[2]; if (cell != EMPTY_CELL) cp[(y+0)*w+(x+2)] = cell;
+	cell = g->fig[3]; if (cell != EMPTY_CELL) cp[(y+1)*w+(x+0)] = cell;
+	cell = g->fig[4]; if (cell != EMPTY_CELL) cp[(y+1)*w+(x+1)] = cell;
+	cell = g->fig[5]; if (cell != EMPTY_CELL) cp[(y+1)*w+(x+2)] = cell;
+	cell = g->fig[6]; if (cell != EMPTY_CELL) cp[(y+2)*w+(x+0)] = cell;
+	cell = g->fig[7]; if (cell != EMPTY_CELL) cp[(y+2)*w+(x+1)] = cell;
+	cell = g->fig[8]; if (cell != EMPTY_CELL) cp[(y+2)*w+(x+2)] = cell;
 }
+
 
 static int collision(const game_t *g, int x, int y, cell_t *fig)
 {
-	int i, j, k = 0;
+	int i, j, k = 0, n = 4;
 	cell_t cell;
 
-	if (x < 0 || x >= g->w) return 1;
 	if (y >= g->h) return 1;
 
 	if (!fig) fig = g->fig;
@@ -279,15 +227,16 @@ static int collision(const game_t *g, int x, int y, cell_t *fig)
 			if (g->cells[(y+j) * g->w + (x+i)] != EMPTY_CELL) {
 				return 1;
 			}
-			k = MAX(k, i);
+			k = MAX(k, i);	// max filled i
+			n = MIN(n, i);	// min filled i
 		}
 	}
 
 	if ((x + k) >= g->w) return 1;
+	if ((x + n) <  0   ) return 1;
 
 	return 0;
 }
-
 
 
 /*
@@ -309,41 +258,37 @@ static int collision(const game_t *g, int x, int y, cell_t *fig)
 
 static void gen_figure(game_t *g)
 {
-	//g->ftyp = rand() % 4;
-	g->ftyp = 3;
-	memset(g->fig, EMPTY_CELL, 3*3*sizeof(cell_t));
+	g->ftyp = rand() % 4;
+	//g->ftyp = 1;
+	memset(g->fig, EMPTY_CELL, 9);
 
 	switch (g->ftyp) {
 	case 0:
-		g->fx = 3;
+		g->fx = 2;
 		g->fy = 0;
-		g->fig[0] = rand() % 6;
+		g->fig[1] = rand() % 6;
 		break;
 	case 1:
-		g->fx = 3;
+		g->fx = 2;
 		g->fy = 0;
-		g->fig[0] = rand() % 6;
-		g->fig[3] = rand() % 6;
-		break;
-	case 2:
-		g->fx = 3;
-		g->fy = 0;
-		g->fig[0] = rand() % 6;
-		g->fig[3] = rand() % 6;
-		g->fig[6] = rand() % 6;
-		break;
-	case 3:
-		g->fx = 3;
-		g->fy = 0;
-		g->fig[0] = rand() % 6;
-		g->fig[3] = rand() % 6;
+		g->fig[1] = rand() % 6;
 		g->fig[4] = rand() % 6;
 		break;
+	case 2:
+		g->fx = 2;
+		g->fy = 0;
+		g->fig[1] = rand() % 6;
+		g->fig[4] = rand() % 6;
+		g->fig[7] = rand() % 6;
+		break;
+	case 3:
+		g->fx = 2;
+		g->fy = 0;
+		g->fig[1] = rand() % 6;
+		g->fig[4] = rand() % 6;
+		g->fig[5] = rand() % 6;
+		break;
 	}
-	//printf("gen: %d\n", g->ftyp);
-	//printf("%d %d %d\n", g->fig[0], g->fig[1], g->fig[2]);
-	//printf("%d %d %d\n", g->fig[3], g->fig[4], g->fig[5]);
-	//printf("%d %d %d\n", g->fig[6], g->fig[7], g->fig[8]);
 }
 
 
