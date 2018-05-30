@@ -16,7 +16,7 @@ static int collision(const game_t *g, int x, int y, cell_t *fig);
 static void copy_figure(const game_t *g, cell_t *cp);
 static void clear_figure(game_t *g);
 static void check_combinations(game_t *g);
-static void check_color(game_t *g, cell_t *buff, size_t buffsz);
+static int check_color(game_t *g, cell_t *buff, char *coords, int ncoords);
 
 
 game_t *game_create(int w, int h)
@@ -43,6 +43,7 @@ game_t *game_create(int w, int h)
 	g->level = 0;
 	g->score = 0;
 	g->game_over = 0;
+	g->combi_cb = NULL;
 
 	memset(g->cells, EMPTY_CELL, w*h);
 	clear_figure(g);
@@ -296,9 +297,9 @@ static void gen_figure(game_t *g)
 }
 
 
-static void check_color(game_t *g, cell_t *buff, size_t buffsz)
+static int check_color(game_t *g, cell_t *buff, char *coords, int ncoords)
 {
-	int x, y, w = g->w, h = g->h;
+	int x, y, w = g->w, h = g->h, i;
 	int xx, yy, count;
 
 	// vertical 3+
@@ -312,7 +313,11 @@ static void check_color(game_t *g, cell_t *buff, size_t buffsz)
 				++count;
 			}
 			if (count > 2) {
-				printf("FOUND: V x=%d, y=%d [%d]\n", x, y, count);
+				//printf("FOUND: V x=%d, y=%d [%d]\n", x, y, count);
+				for (i = 0; i < count; ++i) {
+					coords[ncoords++] = x;
+					coords[ncoords++] = y + i;
+				}
 			}
 			y = yy + 1;
 		}
@@ -329,21 +334,29 @@ static void check_color(game_t *g, cell_t *buff, size_t buffsz)
 				++count;
 			}
 			if (count > 2) {
-				printf("FOUND: H x=%d, y=%d [%d]\n", x, y, count);
+				//printf("FOUND: H x=%d, y=%d [%d]\n", x, y, count);
+				for (i = 0; i < count; ++i) {
+					coords[ncoords++] = x + i;
+					coords[ncoords++] = y;
+				}
 			}
 			x = xx + 1;
 		}
 	}
+
+	return ncoords;
 }
 
+#define COORDS_BUFFSZ	512
 
 static void check_combinations(game_t *g)
 {
-	int x, y, count = 1, clr, i;
+	int x, y, clr, i, ncoords = 0;
 	size_t buffsz = g->w * g->h;
-	cell_t c, pc = EMPTY_CELL;
 
 	cell_t *buff = (cell_t *) malloc(buffsz);
+	char *coords = (char *) malloc(COORDS_BUFFSZ);
+	//memset(coords, (char)-1, COORDS_BUFFSZ);
 
 	for (clr = 0; clr < 6; ++clr) {
 		memset(buff, 0, buffsz);
@@ -351,7 +364,7 @@ static void check_combinations(game_t *g)
 			if (g->cells[i] == clr) buff[i] = 1;
 		}
 
-		check_color(g, buff, buffsz);
+		ncoords = check_color(g, buff, coords, ncoords);
 
 /*
 		printf("\nCOLOR %d:\n", clr);
@@ -364,25 +377,20 @@ static void check_combinations(game_t *g)
 		}
 */
 	}
-	printf("\n");
 
-	free(buff);
-
-	return;
-
-	for (x = 0; x < g->w; ++x) {
-		for (y = 0; y < g->h; ++y) {
-			c = g->cells[y * g->w + x];
-			if (c != EMPTY_CELL && c == pc) {
-				++count;
-			} else {
-				if (count >= 3) {
-					printf("%d %d (%d) [%d]\n", x, y, count, pc);
-				}
-				count = 1;
-				pc = c;
-			}
-		}
+/*
+	for (i = 0; i < COORDS_BUFFSZ; i += 2) {
+		if (coords[i] == (char)-1) break;
+		printf("x=%d,y=%d ", coords[i], coords[i+1]);
 	}
+	printf("\n");
+*/
+
+	if (ncoords > 0 && g->combi_cb) {
+		(*g->combi_cb)(coords, ncoords);
+	}
+
+	free(coords);
+	free(buff);
 }
 

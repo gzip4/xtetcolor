@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <sys/time.h>
+#include <unistd.h>
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -110,7 +111,10 @@ static void draw(Drawable dr, int ww, int wh)
 	int colors[] = { 0xff0000, 0xff00, 0xff, 0xff00ff, 0xffff00, 0xffff, 0, 0 };
 	int i, j, r;
 	cell_t cell;
-	cell_t cells[FIELD_W * FIELD_H * sizeof(cell_t)];
+	cell_t cells[FIELD_W * FIELD_H];
+
+	//char buff[32];
+	//int buffsz;
 
 	game_field(game, &cells[0]);
 
@@ -122,6 +126,12 @@ static void draw(Drawable dr, int ww, int wh)
 	for (j = 0; j < FIELD_H; ++j) {
 		//printf("%d: ", j);
 		for (i = 0; i < FIELD_W; ++i) {
+	//if (game) {
+	//	buffsz = snprintf(buff, 32, "%d,%d", i, j);
+	//	XSetForeground(dis, gc, black);
+	//	XSetBackground(dis, gc, white);
+	//	XDrawImageString(dis, dr, gc, left+i*cellw+8, top+j*cellw+20, buff, buffsz);
+	//}
 			cell = cells[j * FIELD_W + i];
 			if (cell == EMPTY_CELL) continue;
 			XSetForeground(dis, gc, colors[cell]);
@@ -129,6 +139,8 @@ static void draw(Drawable dr, int ww, int wh)
 			XSetForeground(dis, gc, black);
 			XDrawRectangle(dis, dr, gc, left+i*cellw, top+j*cellw, cellw, cellw);
 			//printf(" %d(%d)", i, cell);
+
+
 		}
 		//printf("\n");
 	}
@@ -188,6 +200,37 @@ static void draw_win()
 	}
 
 	XFlush(dis);
+}
+
+static void draw_combinations(Drawable dr, int ww, int wh, const char *coords, int n)
+{
+	int cw = ww / 2, ch = wh / 2;
+	int left = cw - FIELD_WP/2, top = ch - FIELD_HP/2, w = FIELD_WP, h = FIELD_HP, cellw = CELL_WP;
+	int i, j, k;
+
+	for (k = 0; k < n; k += 2) {
+		i = coords[k];
+		j = coords[k + 1];
+		XSetForeground(dis, gc, black);
+		XFillRectangle(dis, dr, gc, left+i*cellw, top+j*cellw, cellw, cellw);
+		//XSetForeground(dis, gc, black);
+		//XDrawRectangle(dis, dr, gc, left+i*cellw, top+j*cellw, cellw, cellw);
+	}
+
+	XFlush(dis);
+}
+
+
+static void draw_win_cb(const char *coords, int n)
+{
+	int w, h;
+
+	get_window_size(&w, &h);
+	draw_combinations(win, w, h, coords, n);
+
+	usleep(80000);	// XXX: blink pause
+
+	draw_win();
 }
 
 
@@ -380,6 +423,8 @@ again:
 		perror("game_create");
 		exit(1);
 	}
+
+	game->combi_cb = draw_win_cb;
 
 	drawptr = draw;
 	draw_win();

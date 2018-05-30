@@ -16,6 +16,8 @@ typedef struct _game_s
 	int ftyp;
 	int fx, fy;
 	cell_t *fig;
+
+	void (*combi_cb)(const char *coords, int n);
 } game_t;
 
 
