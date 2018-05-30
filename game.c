@@ -15,6 +15,8 @@ static void gen_figure(game_t *g);
 static int collision(const game_t *g, int x, int y, cell_t *fig);
 static void copy_figure(const game_t *g, cell_t *cp);
 static void clear_figure(game_t *g);
+static void check_combinations(game_t *g);
+static void check_color(game_t *g, cell_t *buff, size_t buffsz);
 
 
 game_t *game_create(int w, int h)
@@ -95,6 +97,8 @@ void game_tick(game_t *g)
 		// land figure
 		copy_figure(g, g->cells);
 		clear_figure(g);
+
+		check_combinations(g);
 	} else {
 		// advance figure
 		++g->fy;
@@ -291,4 +295,94 @@ static void gen_figure(game_t *g)
 	}
 }
 
+
+static void check_color(game_t *g, cell_t *buff, size_t buffsz)
+{
+	int x, y, w = g->w, h = g->h;
+	int xx, yy, count;
+
+	// vertical 3+
+	for (x = 0; x < w; ++x) {
+		for (y = 0; y < h; ++y) {
+			if (!buff[y * w + x]) continue;
+
+			count = 1;
+			for (yy = y + 1; yy < h; ++yy) {
+				if (!buff[yy * w + x]) break;
+				++count;
+			}
+			if (count > 2) {
+				printf("FOUND: V x=%d, y=%d [%d]\n", x, y, count);
+			}
+			y = yy + 1;
+		}
+	}
+
+	// horizontal 3+
+	for (y = 0; y < h; ++y) {
+		for (x = 0; x < w; ++x) {
+			if (!buff[y * w + x]) continue;
+
+			count = 1;
+			for (xx = x + 1; xx < w; ++xx) {
+				if (!buff[y * w + xx]) break;
+				++count;
+			}
+			if (count > 2) {
+				printf("FOUND: H x=%d, y=%d [%d]\n", x, y, count);
+			}
+			x = xx + 1;
+		}
+	}
+}
+
+
+static void check_combinations(game_t *g)
+{
+	int x, y, count = 1, clr, i;
+	size_t buffsz = g->w * g->h;
+	cell_t c, pc = EMPTY_CELL;
+
+	cell_t *buff = (cell_t *) malloc(buffsz);
+
+	for (clr = 0; clr < 6; ++clr) {
+		memset(buff, 0, buffsz);
+		for (i = 0; i < buffsz; ++i) {
+			if (g->cells[i] == clr) buff[i] = 1;
+		}
+
+		check_color(g, buff, buffsz);
+
+/*
+		printf("\nCOLOR %d:\n", clr);
+		for (y = 0; y < g->h; ++y) {
+			printf("%02d: ", y);
+			for (x = 0; x < g->w; ++x) {
+				printf("%d ", buff[y * g->w + x]);
+			}
+			printf("\n");
+		}
+*/
+	}
+	printf("\n");
+
+	free(buff);
+
+	return;
+
+	for (x = 0; x < g->w; ++x) {
+		for (y = 0; y < g->h; ++y) {
+			c = g->cells[y * g->w + x];
+			if (c != EMPTY_CELL && c == pc) {
+				++count;
+			} else {
+				if (count >= 3) {
+					printf("%d %d (%d) [%d]\n", x, y, count, pc);
+				}
+				count = 1;
+				pc = c;
+			}
+		}
+	}
+}
 
