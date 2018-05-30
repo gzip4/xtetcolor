@@ -194,7 +194,7 @@ static void clear_figure(game_t *g)
 
 static void copy_figure(const game_t *g, cell_t *cp)
 {
-	int i, j, x = g->fx, y = g->fy, w = g->w;
+	const int x = g->fx, y = g->fy, w = g->w;
 	cell_t cell;
 
 	if (g->ftyp == -1) {
@@ -415,9 +415,8 @@ static int check_color(game_t *g, cell_t *buff, char *coords, int ncoords)
 
 static int check_combinations(game_t *g)
 {
-	int x, y, yy, clr, i, ncoords = 0;
-	const int w = g->w;
-	const size_t buffsz = g->w * g->h;
+	int i, x, y, yy, clr, ncoords = 0;
+	const int w = g->w, buffsz = g->w * g->h;
 	cell_t cell;
 
 	cell_t *buff = (cell_t *) malloc(buffsz);

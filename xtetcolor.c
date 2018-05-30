@@ -29,7 +29,7 @@ Window win, root;
 GC gc;
 unsigned long black, white;
 Atom wmDeleteMessage;
-int keyESC, keyEnter, keyLeft, keyRight, keySpace, keyUp, keyDown;
+unsigned int keyESC, keyEnter, keyLeft, keyRight, keySpace, keyUp, keyDown;
 void (*drawptr)(Drawable dr, int ww, int wh);
 game_t *game;
 
@@ -94,8 +94,8 @@ static void get_window_size(int *w, int *h)
 
 static void default_draw(Drawable dr, int ww, int wh)
 {
-	int cw = ww / 2, ch = wh / 2;
-	int left = cw - FIELD_WP/2, top = ch - FIELD_HP/2, w = FIELD_WP, h = FIELD_HP, cellw = CELL_WP;
+	const int cw = ww / 2, ch = wh / 2;
+	const int left = cw - FIELD_WP/2, top = ch - FIELD_HP/2, w = FIELD_WP, h = FIELD_HP;
 
 	XSetForeground(dis, gc, 0xffff);
 	XDrawRectangle(dis, dr, gc, left-1, top-1, w+2, h+2);
@@ -106,15 +106,12 @@ static void default_draw(Drawable dr, int ww, int wh)
 
 static void draw(Drawable dr, int ww, int wh)
 {
-	int cw = ww / 2, ch = wh / 2;
-	int left = cw - FIELD_WP/2, top = ch - FIELD_HP/2, w = FIELD_WP, h = FIELD_HP, cellw = CELL_WP;
-	int colors[] = { 0xff0000, 0xff00, 0xff, 0xff00ff, 0xffff00, 0xffff, 0, 0 };
-	int i, j, r;
+	const int cw = ww / 2, ch = wh / 2;
+	const int left = cw - FIELD_WP/2, top = ch - FIELD_HP/2, w = FIELD_WP, h = FIELD_HP, cellw = CELL_WP;
+	const int colors[] = { 0xff0000, 0xff00, 0xff, 0xff00ff, 0xffff00, 0xffff, 0, 0 };
+	int i, j;
 	cell_t cell;
 	cell_t cells[FIELD_W * FIELD_H];
-
-	char buff[32];
-	int buffsz;
 
 	game_field(game, &cells[0]);
 
@@ -127,7 +124,7 @@ static void draw(Drawable dr, int ww, int wh)
 		for (i = 0; i < FIELD_W; ++i) {
 			cell = cells[j * FIELD_W + i];
 			if (cell == EMPTY_CELL) continue;
-			XSetForeground(dis, gc, colors[cell]);
+			XSetForeground(dis, gc, colors[(int)cell]);
 			XFillRectangle(dis, dr, gc, left+i*cellw, top+j*cellw, cellw, cellw);
 			XSetForeground(dis, gc, black);
 			XDrawRectangle(dis, dr, gc, left+i*cellw, top+j*cellw, cellw, cellw);
@@ -180,8 +177,8 @@ static void draw_win()
 
 static void draw_combinations(Drawable dr, int ww, int wh, const char *coords, int n)
 {
-	int cw = ww / 2, ch = wh / 2;
-	int left = cw - FIELD_WP/2, top = ch - FIELD_HP/2, w = FIELD_WP, h = FIELD_HP, cellw = CELL_WP;
+	const int cw = ww / 2, ch = wh / 2;
+	const int left = cw - FIELD_WP/2, top = ch - FIELD_HP/2, cellw = CELL_WP;
 	int i, j, k;
 
 	for (k = 0; k < n; k += 2) {
@@ -233,7 +230,7 @@ static int init_win()
 	while (XPending(dis)) {
 		XNextEvent(dis, &event);
 
-		if (event.type==ClientMessage && event.xclient.data.l[0] == wmDeleteMessage) {
+		if (event.type==ClientMessage && event.xclient.data.l[0] == (int) wmDeleteMessage) {
 			return 0;
 		}
 
@@ -250,13 +247,13 @@ static int init_win()
 }
 
 // 0 - exit, 1 - key, if keycode=0 - anykey
-static int wait_key(int keycode)
+static int wait_key(unsigned int keycode)
 {
 	XEvent event;
 	while (1) {
 		XNextEvent(dis, &event);
 
-		if (event.type==ClientMessage && event.xclient.data.l[0] == wmDeleteMessage) {
+		if (event.type==ClientMessage && event.xclient.data.l[0] == (int) wmDeleteMessage) {
 			return 0;
 		}
 
@@ -298,7 +295,7 @@ static int x11_loop()
 	{
 		XNextEvent(dis, &event);
 
-		if (event.type==ClientMessage && event.xclient.data.l[0] == wmDeleteMessage) {
+		if (event.type==ClientMessage && event.xclient.data.l[0] == (int) wmDeleteMessage) {
 			return 0;
 		}
 
@@ -415,6 +412,12 @@ again:
 int main(int argc, char *argv[])
 {
 	struct timeval tv;
+
+	if (argc == 2 && 0 == strcmp(argv[1], "-h")) {
+		printf("XTetColor v0.91, gzip4ever@gmail.com (https://github.com/gzip4/xtetcolor)\n");
+		printf("MIT License. Copyright (c) 2018 gzip4\n");
+		return 0;
+	}
 
 	dis	= XOpenDisplay((char *)0);
 	if (!dis) {
