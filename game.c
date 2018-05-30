@@ -72,13 +72,8 @@ void game_tick(game_t *g)
 {
 	if (g->game_over) return;
 
-	if (g->ticks >= 9000) {
-		g->game_over = 1;
-		return;
-	}
-
-	// XXX: level test
-	if (g->ticks > 1 && g->ticks % 40 == 0) {
+	// level up
+	if (g->ticks > 1 && g->ticks % 100 == 0) {
 		++g->level;
 	}
 
@@ -112,7 +107,7 @@ void game_tick(game_t *g)
 
 tick_end:
 	++g->ticks;
-//	++g->level;
+
 }
 
 
@@ -268,9 +263,8 @@ static int collision(const game_t *g, int x, int y, cell_t *fig)
 
 static void gen_figure(game_t *g)
 {
-	g->ftyp = rand() % 4;
-	//g->ftyp = 1;
 	memset(g->fig, EMPTY_CELL, 9);
+	g->ftyp = rand() % 4;
 
 	switch (g->ftyp) {
 	case 0:
@@ -319,7 +313,6 @@ static int check_color(game_t *g, cell_t *buff, char *coords, int ncoords)
 				++count;
 			}
 			if (count > 2) {
-				printf("FOUND: V x=%d, y=%d [%d]\n", x, y, count);
 				for (i = 0; i < count; ++i) {
 					coords[ncoords++] = x;
 					coords[ncoords++] = y + i;
@@ -340,7 +333,6 @@ static int check_color(game_t *g, cell_t *buff, char *coords, int ncoords)
 				++count;
 			}
 			if (count > 2) {
-				printf("FOUND: H x=%d, y=%d [%d]\n", x, y, count);
 				for (i = 0; i < count; ++i) {
 					coords[ncoords++] = x + i;
 					coords[ncoords++] = y;
@@ -372,7 +364,6 @@ static int check_color(game_t *g, cell_t *buff, char *coords, int ncoords)
 				++count;
 			}
 			if (count > 2) {
-				//printf("FOUND: DIAG x=%d, y=%d [%d]\n", x, y, count);
 				for (i = 0; i < count; ++i) {
 					coords[ncoords++] = x + i;
 					coords[ncoords++] = y + i;
@@ -405,7 +396,6 @@ static int check_color(game_t *g, cell_t *buff, char *coords, int ncoords)
 				++count;
 			}
 			if (count > 2) {
-				//printf("FOUND: DIAG x=%d, y=%d [%d]\n", x, y, count);
 				for (i = 0; i < count; ++i) {
 					coords[ncoords++] = x - i;
 					coords[ncoords++] = y + i;
@@ -456,6 +446,13 @@ static int check_combinations(game_t *g)
 			cell = (yy == 0) ? EMPTY_CELL : g->cells[(yy - 1) * w + x];
 			g->cells[yy * w + x] = cell;
 		}
+
+		// score count per cell
+		g->score += 9 * (g->level + 1) * (g->ncomb + 1);
+	}
+
+	if (ncoords >= 12) {
+		g->score += 1000 * (g->level + 1) * (g->ncomb + 1);
 	}
 
 	free(coords);

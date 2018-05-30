@@ -113,8 +113,8 @@ static void draw(Drawable dr, int ww, int wh)
 	cell_t cell;
 	cell_t cells[FIELD_W * FIELD_H];
 
-	//char buff[32];
-	//int buffsz;
+	char buff[32];
+	int buffsz;
 
 	game_field(game, &cells[0]);
 
@@ -124,41 +124,15 @@ static void draw(Drawable dr, int ww, int wh)
 	XFillRectangle(dis, dr, gc, left, top, w+1, h+1);
 
 	for (j = 0; j < FIELD_H; ++j) {
-		//printf("%d: ", j);
 		for (i = 0; i < FIELD_W; ++i) {
-	//if (game) {
-	//	buffsz = snprintf(buff, 32, "%d,%d", i, j);
-	//	XSetForeground(dis, gc, black);
-	//	XSetBackground(dis, gc, white);
-	//	XDrawImageString(dis, dr, gc, left+i*cellw+8, top+j*cellw+20, buff, buffsz);
-	//}
 			cell = cells[j * FIELD_W + i];
 			if (cell == EMPTY_CELL) continue;
 			XSetForeground(dis, gc, colors[cell]);
 			XFillRectangle(dis, dr, gc, left+i*cellw, top+j*cellw, cellw, cellw);
 			XSetForeground(dis, gc, black);
 			XDrawRectangle(dis, dr, gc, left+i*cellw, top+j*cellw, cellw, cellw);
-			//printf(" %d(%d)", i, cell);
-
-
-		}
-		//printf("\n");
-	}
-
-
-	return;
-
-	for (i = 0; i < FIELD_W; ++i) {
-		for (j = 0; j < FIELD_H; ++j) {
-			r = rand() % 7; //printf("%d ", r);
-			if (r == 6) continue;
-			XSetForeground(dis, gc, colors[r]);
-			XFillRectangle(dis, dr, gc, left+i*cellw, top+j*cellw, cellw, cellw);
-			XSetForeground(dis, gc, black);
-			XDrawRectangle(dis, dr, gc, left+i*cellw, top+j*cellw, cellw, cellw);
 		}
 	}
-
 }
 
 
@@ -189,14 +163,16 @@ static void draw_win()
 	if (game && game->game_over) {
 		XSetForeground(dis, gc, white);
 		XSetBackground(dis, gc, black);
-		XDrawImageString(dis, win, gc, 100, 100, " -=GAME OVER=- ", 15);
+		XDrawImageString(dis, win, gc, 100, 120, " -=GAME OVER=- ", 15);
 	}
 
 	if (game) {
-		buffsz = snprintf(buff, 32, "LEVEL: %d", game->level + 1);
 		XSetForeground(dis, gc, white);
 		XSetBackground(dis, gc, black);
+		buffsz = snprintf(buff, 32, "LEVEL: %d", game->level + 1);
 		XDrawImageString(dis, win, gc, 100, 80, buff, buffsz);
+		buffsz = snprintf(buff, 32, "SCORE: %d", game->score);
+		XDrawImageString(dis, win, gc, 100, 100, buff, buffsz);
 	}
 
 	XFlush(dis);
@@ -213,8 +189,6 @@ static void draw_combinations(Drawable dr, int ww, int wh, const char *coords, i
 		j = coords[k + 1];
 		XSetForeground(dis, gc, black);
 		XFillRectangle(dis, dr, gc, left+i*cellw, top+j*cellw, cellw, cellw);
-		//XSetForeground(dis, gc, black);
-		//XDrawRectangle(dis, dr, gc, left+i*cellw, top+j*cellw, cellw, cellw);
 	}
 
 	XFlush(dis);
