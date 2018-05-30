@@ -384,11 +384,11 @@ static void game_loop()
 	drawptr = NULL;
 	draw_win();
 
-again:
 	if (!wait_key(keyEnter)) {
 		return;
 	}
 
+again:
 	game = game_create(FIELD_W, FIELD_H);
 	if ( !game ) {
 		perror("game_create");
@@ -401,6 +401,11 @@ again:
 	draw_win();
 
 	if (!time_loop()) {
+		return;
+	}
+
+	// game needed for draw function, destroy after keypress
+	if (!wait_key(keyEnter)) {
 		return;
 	}
 
