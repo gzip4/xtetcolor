@@ -78,7 +78,7 @@ void game_tick(game_t *g)
 	}
 
 	// XXX: level test
-	if (g->ticks > 1 && g->ticks % 20 == 0) {
+	if (g->ticks > 1 && g->ticks % 40 == 0) {
 		++g->level;
 	}
 
@@ -304,8 +304,9 @@ static void gen_figure(game_t *g)
 
 static int check_color(game_t *g, cell_t *buff, char *coords, int ncoords)
 {
-	int x, y, w = g->w, h = g->h, i;
-	int xx, yy, count;
+	int x, y, xx, yy, i, count, bn;
+	const int w = g->w, h = g->h, bsz = (w + h) * 2;
+	char *diag = (char *) malloc(bsz);
 
 	// vertical 3+
 	for (x = 0; x < w; ++x) {
@@ -318,13 +319,13 @@ static int check_color(game_t *g, cell_t *buff, char *coords, int ncoords)
 				++count;
 			}
 			if (count > 2) {
-				//printf("FOUND: V x=%d, y=%d [%d]\n", x, y, count);
+				printf("FOUND: V x=%d, y=%d [%d]\n", x, y, count);
 				for (i = 0; i < count; ++i) {
 					coords[ncoords++] = x;
 					coords[ncoords++] = y + i;
 				}
 			}
-			y = yy + 1;
+			y = yy;
 		}
 	}
 
@@ -339,15 +340,83 @@ static int check_color(game_t *g, cell_t *buff, char *coords, int ncoords)
 				++count;
 			}
 			if (count > 2) {
-				//printf("FOUND: H x=%d, y=%d [%d]\n", x, y, count);
+				printf("FOUND: H x=%d, y=%d [%d]\n", x, y, count);
 				for (i = 0; i < count; ++i) {
 					coords[ncoords++] = x + i;
 					coords[ncoords++] = y;
 				}
 			}
-			x = xx + 1;
+			x = xx;
 		}
 	}
+
+	// diagonal right 3+
+	bn = 0;
+	for (x = w - 1, y = 0; x >= 0; --x) {
+		diag[bn++] = x;
+		diag[bn++] = y;
+	}
+	for (x = 0, y = 0; y < h; ++y) {
+		diag[bn++] = x;
+		diag[bn++] = y;
+	}
+	for (bn = 0; bn < bsz; bn += 2) {
+		x = diag[bn];
+		y = diag[bn + 1];
+		for ( ; x < w && y < h; ++x, ++y) {
+			if (!buff[y * w + x]) continue;
+
+			count = 1;
+			for (xx = x + 1, yy = y + 1; xx < w && yy < h; ++xx, ++yy) {
+				if (!buff[yy * w + xx]) break;
+				++count;
+			}
+			if (count > 2) {
+				//printf("FOUND: DIAG x=%d, y=%d [%d]\n", x, y, count);
+				for (i = 0; i < count; ++i) {
+					coords[ncoords++] = x + i;
+					coords[ncoords++] = y + i;
+				}
+			}
+			x = xx;
+			y = yy;
+		}
+	}
+
+	// diagonal left 3+
+	bn = 0;
+	for (x = 0, y = 0; x < w; ++x) {
+		diag[bn++] = x;
+		diag[bn++] = y;
+	}
+	for (x = w - 1, y = 0; y < h; ++y) {
+		diag[bn++] = x;
+		diag[bn++] = y;
+	}
+	for (bn = 0; bn < bsz; bn += 2) {
+		x = diag[bn];
+		y = diag[bn + 1];
+		for ( ; x >= 0 && y < h; --x, ++y) {
+			if (!buff[y * w + x]) continue;
+
+			count = 1;
+			for (xx = x - 1, yy = y + 1; xx >= 0 && yy < h; --xx, ++yy) {
+				if (!buff[yy * w + xx]) break;
+				++count;
+			}
+			if (count > 2) {
+				//printf("FOUND: DIAG x=%d, y=%d [%d]\n", x, y, count);
+				for (i = 0; i < count; ++i) {
+					coords[ncoords++] = x - i;
+					coords[ncoords++] = y + i;
+				}
+			}
+			x = xx;
+			y = yy;
+		}
+	}
+
+	free(diag);
 
 	return ncoords;
 }
