@@ -508,9 +508,8 @@ static int init_fonts()
 		if (!fs) continue;
 		font1 = fs->fid;
 		font1cw = fs->max_bounds.rbearing - fs->min_bounds.lbearing;	// symbol width
-		printf("%s [%d]\n", fname, font1cw);
 		XSetFont(dis, gc, font1);
-		XFreeFontInfo(NULL, fs, 0);
+		XFreeFont(dis, fs);
 		return 1;
 	}
 
@@ -564,7 +563,6 @@ int main(int argc, char *argv[])
 main_exit:
 	XFreeGC(dis, gc);
 	XDestroyWindow(dis, win);
-	if (font1) XUnloadFont(dis, font1);
 	XCloseDisplay(dis);
 
 	return 0;
