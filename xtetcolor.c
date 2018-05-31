@@ -299,8 +299,7 @@ static int x11_loop()
 
 	check_for_tick();
 
-	while(XPending(dis))
-	{
+	while (XPending(dis)) {
 		XNextEvent(dis, &event);
 
 		if (event.type==ClientMessage && event.xclient.data.l[0] == (int) wmDeleteMessage) {
@@ -313,6 +312,11 @@ static int x11_loop()
 
 		if (event.type==KeyPress && event.xkey.keycode==keyESC) {
 			return 0;
+		}
+
+		if (event.type==KeyPress && event.xkey.keycode==keyEnter) {
+			game->game_over = 1;
+			draw_win();
 		}
 
 		if (event.type==KeyPress && event.xkey.keycode==keyLeft) {
