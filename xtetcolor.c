@@ -26,7 +26,7 @@
 Display *dis;
 int screen;
 Window win, root;
-GC gc;
+GC gc, gc2;
 unsigned long black, white;
 Atom wmDeleteMessage;
 Font font1;
@@ -100,22 +100,35 @@ static void draw_static(Drawable dr, int ww, int wh)
 	const int left = cw - FIELD_WP/2, top = ch - FIELD_HP/2;
 	int topn = top + 180;
 	char *str[] = {
-		"ENTER      - Start / Reset",
+		"ENTER      - Start / reset",
 		"Left/Right - Move figure",
 		"Up/Down    - Rotate figure",
 		"Space      - Drop figure",
 		"P          - Pause / resume",
-		"ESC        - Leave game"
+		"ESC        - Leave game",
+		"xtetcolor v0.96, MIT (c) gzip4, 2018",
+		"https://github.com/gzip4/xtetcolor",
+		"XTETCOLOR"
 	};
 
 	XSetForeground(dis, gc, white);
-	XSetBackground(dis, gc, 0x303030);
-	XDrawImageString(dis, dr, gc, left-260, topn, str[0], strlen(str[0]));
-	XDrawImageString(dis, dr, gc, left-260, topn+=20, str[1], strlen(str[1]));
-	XDrawImageString(dis, dr, gc, left-260, topn+=20, str[2], strlen(str[2]));
-	XDrawImageString(dis, dr, gc, left-260, topn+=20, str[3], strlen(str[3]));
-	XDrawImageString(dis, dr, gc, left-260, topn+=20, str[4], strlen(str[4]));
-	XDrawImageString(dis, dr, gc, left-260, topn+=20, str[5], strlen(str[5]));
+	XDrawString(dis, dr, gc, left-260, topn, str[0], strlen(str[0]));
+	XDrawString(dis, dr, gc, left-260, topn+=20, str[1], strlen(str[1]));
+	XDrawString(dis, dr, gc, left-260, topn+=20, str[2], strlen(str[2]));
+	XDrawString(dis, dr, gc, left-260, topn+=20, str[3], strlen(str[3]));
+	XDrawString(dis, dr, gc, left-260, topn+=20, str[4], strlen(str[4]));
+	XDrawString(dis, dr, gc, left-260, topn+=20, str[5], strlen(str[5]));
+
+	XSetForeground(dis, gc2, white);
+	XSetBackground(dis, gc2, black);
+	XDrawString(dis, dr, gc2, left-260, topn+=60, str[6], strlen(str[6]));
+	XDrawString(dis, dr, gc2, left-260, topn+=20, str[7], strlen(str[7]));
+
+	XSetForeground(dis, gc, black);
+	XDrawString(dis, dr, gc, left-262, top+16, str[8], strlen(str[8]));
+	XSetForeground(dis, gc, 0xd0d000);
+	XDrawString(dis, dr, gc, left-260, top+18, str[8], strlen(str[8]));
+	XDrawString(dis, dr, gc, left-259, top+18, str[8], strlen(str[8]));
 }
 
 
@@ -185,18 +198,18 @@ static void draw(Drawable dr, int ww, int wh)
 	}
 
 	if (game && game->game_over) {
-		XSetForeground(dis, gc, white);
+		XSetForeground(dis, gc, 0xff5050);
 		XSetBackground(dis, gc, 0x303030);
-		XDrawImageString(dis, dr, gc, left-260, top+78, "GAME OVER (Press ENTER)", 23);
+		XDrawImageString(dis, dr, gc, left-260, top+118, "GAME OVER (Press ENTER)", 23);
 	}
 
 	if (game) {
 		XSetForeground(dis, gc, white);
 		XSetBackground(dis, gc, 0x303030);
 		buffsz = snprintf(buff, 32, "LEVEL: %d", game->level + 1);
-		XDrawImageString(dis, dr, gc, left-260, top+18, buff, buffsz);
+		XDrawImageString(dis, dr, gc, left-260, top+58, buff, buffsz);
 		buffsz = snprintf(buff, 32, "SCORE: %d", game->score);
-		XDrawImageString(dis, dr, gc, left-260, top+48, buff, buffsz);
+		XDrawImageString(dis, dr, gc, left-260, top+88, buff, buffsz);
 	}
 
 	draw_static(dr, ww, wh);
@@ -463,7 +476,8 @@ static int init_win()
 	XSetWindowBackground(dis, win, None);
 	XSetWindowBackgroundPixmap(dis, win, None);
 
-	gc = XCreateGC(dis, win, 0, 0);
+	gc  = XCreateGC(dis, win, 0, 0);
+	gc2 = XCreateGC(dis, win, 0, 0);
 
 	XSetBackground(dis, gc, black);
 	XSetForeground(dis, gc, white);
@@ -495,20 +509,22 @@ static int init_fonts()
 	int i = 0;
 	XFontStruct *fs;
 	char *fname;
-	char *fnames[] = { "-xos4-terminus-medium-*-*-*-16-*-*-*-*-*-iso10646-1",
-			   "-xos4-terminus-medium-*-*-*-16-*-*-*-*-*-*-*",
-			   "-misc-fixed-medium-*-*-*-18-*-*-*-*-*-iso10646-1",
-			   "-misc-fixed-medium-*-*-*-18-*-*-*-*-*-*-*",
-			   "9x18",
-			   "fixed",
-			   NULL };
+	char *fnames[] = {
+		"-xos4-terminus-medium-*-*-*-16-*-*-*-*-*-iso10646-1",
+		"-xos4-terminus-medium-*-*-*-16-*-*-*-*-*-*-*",
+		"-misc-fixed-medium-*-*-*-18-*-*-*-*-*-iso10646-1",
+		"-misc-fixed-medium-*-*-*-18-*-*-*-*-*-*-*",
+		"9x18",
+		"fixed",
+		NULL };
 
 	while ( (fname = fnames[i++]) ) {
 		fs = XLoadQueryFont(dis, fname);
 		if (!fs) continue;
 		font1 = fs->fid;
 		font1cw = fs->max_bounds.rbearing - fs->min_bounds.lbearing;	// symbol width
-		XSetFont(dis, gc, font1);
+		XSetFont(dis, gc,  font1);
+		XSetFont(dis, gc2, XLoadFont(dis, "fixed"));
 		XFreeFont(dis, fs);
 		return 1;
 	}
@@ -522,7 +538,7 @@ int main(int argc, char *argv[])
 
 	if (argc == 2 && 0 == strcmp(argv[1], "-h")) {
 		printf("XTetColor v0.96, gzip4ever@gmail.com (https://github.com/gzip4/xtetcolor)\n");
-		printf("MIT License. Copyright (c) 2018 gzip4\n");
+		printf("MIT License. Copyright (c) gzip4, 2018\n");
 		return 0;
 	}
 
@@ -562,6 +578,7 @@ int main(int argc, char *argv[])
 
 main_exit:
 	XFreeGC(dis, gc);
+	XFreeGC(dis, gc2);
 	XDestroyWindow(dis, win);
 	XCloseDisplay(dis);
 
