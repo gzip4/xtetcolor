@@ -29,6 +29,8 @@ Window win, root;
 GC gc;
 unsigned long black, white;
 Atom wmDeleteMessage;
+Font font1;
+int font1cw;
 unsigned int keyESC, keyEnter, keyLeft, keyRight, keySpace, keyUp, keyDown;
 void (*drawptr)(Drawable dr, int ww, int wh);
 game_t *game;
@@ -92,6 +94,31 @@ static void get_window_size(int *w, int *h)
 }
 
 
+static void draw_static(Drawable dr, int ww, int wh)
+{
+	const int cw = ww / 2, ch = wh / 2;
+	const int left = cw - FIELD_WP/2, top = ch - FIELD_HP/2, w = FIELD_WP, h = FIELD_HP;
+	int topn = top + 180;
+	char *str[] = {
+		"ENTER      - Start / Reset",
+		"Left/Right - Move figure",
+		"Up/Down    - Rotate figure",
+		"Space      - Drop figure",
+		"P          - Pause / resume",
+		"ESC        - Leave game"
+	};
+
+	XSetForeground(dis, gc, white);
+	XSetBackground(dis, gc, 0x303030);
+	XDrawImageString(dis, dr, gc, left-260, topn, str[0], strlen(str[0]));
+	XDrawImageString(dis, dr, gc, left-260, topn+=20, str[1], strlen(str[1]));
+	XDrawImageString(dis, dr, gc, left-260, topn+=20, str[2], strlen(str[2]));
+	XDrawImageString(dis, dr, gc, left-260, topn+=20, str[3], strlen(str[3]));
+	XDrawImageString(dis, dr, gc, left-260, topn+=20, str[4], strlen(str[4]));
+	XDrawImageString(dis, dr, gc, left-260, topn+=20, str[5], strlen(str[5]));
+}
+
+
 static void default_draw(Drawable dr, int ww, int wh)
 {
 	const int cw = ww / 2, ch = wh / 2;
@@ -101,6 +128,12 @@ static void default_draw(Drawable dr, int ww, int wh)
 	XDrawRectangle(dis, dr, gc, left-1, top-1, w+2, h+2);
 	XSetForeground(dis, gc, 0xd0d0d0);
 	XFillRectangle(dis, dr, gc, left, top, w+1, h+1);
+
+	XSetForeground(dis, gc, black);
+	XSetBackground(dis, gc, 0xd0d0d0);
+	XDrawImageString(dis, dr, gc, cw - font1cw*10, ch, "Press ENTER to start", 20);
+
+	draw_static(dr, ww, wh);
 }
 
 
@@ -117,6 +150,8 @@ static void draw_paused(Drawable dr, int ww, int wh)
 	XSetForeground(dis, gc, black);
 	XSetBackground(dis, gc, 0xd0d0d0);
 	XDrawImageString(dis, dr, gc, left+20, top+30, " || PAUSE ", 10);
+
+	draw_static(dr, ww, wh);
 }
 
 
@@ -128,6 +163,8 @@ static void draw(Drawable dr, int ww, int wh)
 	int i, j;
 	cell_t cell;
 	cell_t cells[FIELD_W * FIELD_H];
+	char buff[32];
+	int buffsz;
 
 	game_field(game, &cells[0]);
 
@@ -146,6 +183,23 @@ static void draw(Drawable dr, int ww, int wh)
 			XDrawRectangle(dis, dr, gc, left+i*cellw, top+j*cellw, cellw, cellw);
 		}
 	}
+
+	if (game && game->game_over) {
+		XSetForeground(dis, gc, white);
+		XSetBackground(dis, gc, 0x303030);
+		XDrawImageString(dis, dr, gc, left-260, top+78, "GAME OVER (Press ENTER)", 23);
+	}
+
+	if (game) {
+		XSetForeground(dis, gc, white);
+		XSetBackground(dis, gc, 0x303030);
+		buffsz = snprintf(buff, 32, "LEVEL: %d", game->level + 1);
+		XDrawImageString(dis, dr, gc, left-260, top+18, buff, buffsz);
+		buffsz = snprintf(buff, 32, "SCORE: %d", game->score);
+		XDrawImageString(dis, dr, gc, left-260, top+48, buff, buffsz);
+	}
+
+	draw_static(dr, ww, wh);
 }
 
 
@@ -154,8 +208,6 @@ static void draw_win()
 	int w, h;
 	int depth = DefaultDepth(dis, screen);
 	Pixmap pixmap;
-	char buff[32];
-	int buffsz;
 
 	get_window_size(&w, &h);
 	pixmap = XCreatePixmap(dis, root, w, h, depth);
@@ -173,23 +225,9 @@ static void draw_win()
 	XCopyArea(dis, pixmap, win, gc, 0, 0, w, h, 0, 0);
 	XFreePixmap(dis, pixmap);
 
-	if (game && game->game_over) {
-		XSetForeground(dis, gc, white);
-		XSetBackground(dis, gc, black);
-		XDrawImageString(dis, win, gc, 100, 120, " -=GAME OVER=- ", 15);
-	}
-
-	if (game) {
-		XSetForeground(dis, gc, white);
-		XSetBackground(dis, gc, black);
-		buffsz = snprintf(buff, 32, "LEVEL: %d", game->level + 1);
-		XDrawImageString(dis, win, gc, 100, 80, buff, buffsz);
-		buffsz = snprintf(buff, 32, "SCORE: %d", game->score);
-		XDrawImageString(dis, win, gc, 100, 100, buff, buffsz);
-	}
-
 	XFlush(dis);
 }
+
 
 static void draw_combinations(Drawable dr, int ww, int wh, const char *coords, int n)
 {
@@ -220,47 +258,6 @@ static void draw_win_cb(const char *coords, int n)
 	draw_win();
 }
 
-
-static int init_win()
-{
-	XEvent event;
-
-	win = XCreateSimpleWindow(dis, root, 0, 0, WINDOW_W, WINDOW_H, 0, None, None);
-	XSetWMProtocols(dis, win, &wmDeleteMessage, 1);
-	XSetStandardProperties(dis, win, "X Tetcolor", "HI!", None, NULL, 0, NULL);
-	XSelectInput(dis, win, ExposureMask|ButtonPressMask|KeyPressMask);
-	size_hints(dis, win);
-
-	/* transparent window - avoid flickering */
-	XSetWindowBackground(dis, win, None);
-	XSetWindowBackgroundPixmap(dis, win, None);
-
-	gc = XCreateGC(dis, win, 0, 0);
-
-	XSetBackground(dis, gc, black);
-	XSetForeground(dis, gc, white);
-	XClearWindow(dis, win);
-	XMapRaised(dis, win);
-	XFlush(dis);
-
-	while (XPending(dis)) {
-		XNextEvent(dis, &event);
-
-		if (event.type==ClientMessage && event.xclient.data.l[0] == (int) wmDeleteMessage) {
-			return 0;
-		}
-
-		if (event.type==KeyPress && event.xkey.keycode==keyESC) {
-			return 0;
-		}
-
-		if (event.type==Expose && event.xexpose.count==0) {
-			draw_win();
-		}
-	}
-
-	return 1;
-}
 
 // 0 - exit, 1 - key, if keycode=0 - anykey
 static int wait_key(unsigned int keycode)
@@ -452,12 +449,80 @@ again:
 }
 
 
+static int init_win()
+{
+	XEvent event;
+
+	win = XCreateSimpleWindow(dis, root, 0, 0, WINDOW_W, WINDOW_H, 0, None, None);
+	XSetWMProtocols(dis, win, &wmDeleteMessage, 1);
+	XSetStandardProperties(dis, win, "X Tetcolor", "HI!", None, NULL, 0, NULL);
+	XSelectInput(dis, win, ExposureMask|ButtonPressMask|KeyPressMask);
+	size_hints(dis, win);
+
+	/* transparent window - avoid flickering */
+	XSetWindowBackground(dis, win, None);
+	XSetWindowBackgroundPixmap(dis, win, None);
+
+	gc = XCreateGC(dis, win, 0, 0);
+
+	XSetBackground(dis, gc, black);
+	XSetForeground(dis, gc, white);
+	XClearWindow(dis, win);
+	XMapRaised(dis, win);
+	XFlush(dis);
+
+	while (XPending(dis)) {
+		XNextEvent(dis, &event);
+
+		if (event.type==ClientMessage && event.xclient.data.l[0] == (int) wmDeleteMessage) {
+			return 0;
+		}
+
+		if (event.type==KeyPress && event.xkey.keycode==keyESC) {
+			return 0;
+		}
+
+		if (event.type==Expose && event.xexpose.count==0) {
+			draw_win();
+		}
+	}
+
+	return 1;
+}
+
+static int init_fonts()
+{
+	int i = 0;
+	XFontStruct *fs;
+	char *fname;
+	char *fnames[] = { "-xos4-terminus-medium-*-*-*-16-*-*-*-*-*-iso10646-1",
+			   "-xos4-terminus-medium-*-*-*-16-*-*-*-*-*-*-*",
+			   "-misc-fixed-medium-*-*-*-18-*-*-*-*-*-iso10646-1",
+			   "-misc-fixed-medium-*-*-*-18-*-*-*-*-*-*-*",
+			   "9x18",
+			   "fixed",
+			   NULL };
+
+	while ( (fname = fnames[i++]) ) {
+		fs = XLoadQueryFont(dis, fname);
+		if (!fs) continue;
+		font1 = fs->fid;
+		font1cw = fs->max_bounds.rbearing - fs->min_bounds.lbearing;	// symbol width
+		printf("%s [%d]\n", fname, font1cw);
+		XSetFont(dis, gc, font1);
+		XFreeFontInfo(NULL, fs, 0);
+		return 1;
+	}
+
+	return 0;
+}
+
 int main(int argc, char *argv[])
 {
 	struct timeval tv;
 
 	if (argc == 2 && 0 == strcmp(argv[1], "-h")) {
-		printf("XTetColor v0.93, gzip4ever@gmail.com (https://github.com/gzip4/xtetcolor)\n");
+		printf("XTetColor v0.96, gzip4ever@gmail.com (https://github.com/gzip4/xtetcolor)\n");
 		printf("MIT License. Copyright (c) 2018 gzip4\n");
 		return 0;
 	}
@@ -490,12 +555,16 @@ int main(int argc, char *argv[])
 	if (!init_win()) {
 		goto main_exit;
 	}
+	if (!init_fonts()) {
+		goto main_exit;
+	}
 
 	game_loop();
 
 main_exit:
 	XFreeGC(dis, gc);
 	XDestroyWindow(dis, win);
+	if (font1) XUnloadFont(dis, font1);
 	XCloseDisplay(dis);
 
 	return 0;
