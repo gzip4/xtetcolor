@@ -136,11 +136,11 @@ int game_move_l(game_t *g)
  *  6 7 8  8 5 2  0 3 6
  *  SRC    LEFT   RIGHT
  */
-int game_move_rot(game_t *g)
+int game_move_rot(game_t *g, int dir)
 {
-	int i;
+	int i, *cr;
 	int rr[] = {2, 5, 8, 1, 4, 7, 0, 3, 6};		// right rotation
-	//int lr[] = {6, 3, 0, 7, 4, 1, 8, 5, 2};	// left rotation
+	int lr[] = {6, 3, 0, 7, 4, 1, 8, 5, 2};		// left rotation
 	cell_t rc[3 * 3];
 
 	memset(rc, EMPTY_CELL, 9);
@@ -149,8 +149,9 @@ int game_move_rot(game_t *g)
 	case 1:
 	case 2:
 	case 3:
+		if (dir) cr = rr; else cr = lr;
 		for (i = 0; i < 9; ++i) {
-			rc[rr[i]] = g->fig[i];
+			rc[cr[i]] = g->fig[i];
 		}
 		if (collision(g, g->fx, g->fy, rc)) {
 			return 0;

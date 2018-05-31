@@ -30,7 +30,7 @@ int game_tick(game_t *g);
 
 int game_move_r(game_t *g);
 int game_move_l(game_t *g);
-int game_move_rot(game_t *g);
+int game_move_rot(game_t *g, int dir);
 int game_move_down(game_t *g);
 
 #endif /* GAME_H */

@@ -358,13 +358,13 @@ static int x11_loop()
 		}
 
 		if (event.type==KeyPress && event.xkey.keycode==keyUp) {
-			if (game_move_rot(game)) {
+			if (game_move_rot(game, 1)) {
 				draw_win();
 			}
 		}
 
 		if (event.type==KeyPress && event.xkey.keycode==keyDown) {
-			if (game_move_rot(game)) {
+			if (game_move_rot(game, 0)) {
 				draw_win();
 			}
 		}
