@@ -277,10 +277,18 @@ static int wait_key(unsigned int keycode)
 
 static void check_for_tick()
 {
-	int msec = 1000 - game->level * 50;
+	int rc, msec = 1000 - game->level * 50;
 	if (since_last_time(msec < 100 ? 100 : msec)) {
-		game_tick(game);
+		rc = game_tick(game);
 		draw_win();
+		if (rc == 1) {		// land figure
+			// wait and gen new one
+			while (!since_last_time(50)) {
+				usleep(1000);
+			}
+			game_tick(game);
+			draw_win();
+		}
 	}
 }
 
@@ -341,6 +349,8 @@ static int x11_loop()
 		if (event.type==KeyPress) {
 			//printf("KeyPress: %x\n", event.xkey.keycode);
 		}
+
+		check_for_tick();
 	}
 
 	return 1;
@@ -349,7 +359,7 @@ static int x11_loop()
 
 static int time_loop()
 {
-	int x11_fd, num_ready_fds;
+	int x11_fd;
 	fd_set in_fds;
 	struct timeval tv;
 
@@ -363,10 +373,7 @@ static int time_loop()
 		FD_SET(x11_fd, &in_fds);
 		tv.tv_usec = 100000;	// 0.1 sec
 		tv.tv_sec = 0;
-		num_ready_fds = select(x11_fd + 1, &in_fds, NULL, NULL, &tv);
-		if (num_ready_fds == 0) {
-			check_for_tick();
-		}
+		select(x11_fd + 1, &in_fds, NULL, NULL, &tv);
 
 		if (!x11_loop()) {
 			return 0;
@@ -419,7 +426,7 @@ int main(int argc, char *argv[])
 	struct timeval tv;
 
 	if (argc == 2 && 0 == strcmp(argv[1], "-h")) {
-		printf("XTetColor v0.91, gzip4ever@gmail.com (https://github.com/gzip4/xtetcolor)\n");
+		printf("XTetColor v0.93, gzip4ever@gmail.com (https://github.com/gzip4/xtetcolor)\n");
 		printf("MIT License. Copyright (c) 2018 gzip4\n");
 		return 0;
 	}

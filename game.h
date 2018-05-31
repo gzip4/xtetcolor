@@ -26,7 +26,7 @@ game_t *game_create(int w, int h);
 void game_destroy(game_t *g);
 
 void game_field(const game_t *g, cell_t *cp);
-void game_tick(game_t *g);
+int game_tick(game_t *g);
 
 int game_move_r(game_t *g);
 int game_move_l(game_t *g);

@@ -68,9 +68,9 @@ void game_field(const game_t *g, cell_t *cp)
 }
 
 
-void game_tick(game_t *g)
+int game_tick(game_t *g)
 {
-	if (g->game_over) return;
+	if (g->game_over) return 0;
 
 	// level up
 	if (g->ticks > 1 && g->ticks % 100 == 0) {
@@ -84,9 +84,10 @@ void game_tick(game_t *g)
 			copy_figure(g, g->cells);
 			clear_figure(g);
 			g->game_over = 1;
-			return;
+			return 0;
 		}
-		goto tick_end;
+		++g->ticks;
+		return 2;
 	}
 
 	// have figure
@@ -100,14 +101,12 @@ void game_tick(game_t *g)
 			++g->ncomb;
 		}
 		g->ncomb = 0;
+		return 1;
 	} else {
 		// advance figure
 		++g->fy;
+		return 2;
 	}
-
-tick_end:
-	++g->ticks;
-
 }
 
 
