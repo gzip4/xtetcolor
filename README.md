@@ -8,8 +8,9 @@ Tested on:
   - FreeBSD11/amd64
 
 Controls:
-  * ENTER       - start game
+  * ENTER       - start/reset game
   * Left/Right  - move figure
   * Up/Down     - rotate figure
   * Space       - drop figure
+  * P           - pause/resume game
   * ESC         - leave game
