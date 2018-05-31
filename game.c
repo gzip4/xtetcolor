@@ -138,10 +138,11 @@ int game_move_l(game_t *g)
  */
 int game_move_rot(game_t *g, int dir)
 {
-	int i, *cr;
-	int rr[] = {2, 5, 8, 1, 4, 7, 0, 3, 6};		// right rotation
-	int lr[] = {6, 3, 0, 7, 4, 1, 8, 5, 2};		// left rotation
-	cell_t rc[3 * 3];
+	int i;
+	const int *cr;
+	const int rr[] = {2, 5, 8, 1, 4, 7, 0, 3, 6};		// right rotation
+	const int lr[] = {6, 3, 0, 7, 4, 1, 8, 5, 2};		// left rotation
+	cell_t rc[9];
 
 	memset(rc, EMPTY_CELL, 9);
 
