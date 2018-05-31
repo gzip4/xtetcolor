@@ -1,6 +1,8 @@
 # xtetcolor
 Tetcolor game clone (X Window)
 
+Original idea - Sergey Sotnikov, 1991
+
 Tested on:
   - Raspbian/RPi3
   - FreeBSD11/amd64
