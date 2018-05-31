@@ -97,7 +97,7 @@ static void get_window_size(int *w, int *h)
 static void draw_static(Drawable dr, int ww, int wh)
 {
 	const int cw = ww / 2, ch = wh / 2;
-	const int left = cw - FIELD_WP/2, top = ch - FIELD_HP/2, w = FIELD_WP, h = FIELD_HP;
+	const int left = cw - FIELD_WP/2, top = ch - FIELD_HP/2;
 	int topn = top + 180;
 	char *str[] = {
 		"ENTER      - Start / Reset",
@@ -149,7 +149,7 @@ static void draw_paused(Drawable dr, int ww, int wh)
 
 	XSetForeground(dis, gc, black);
 	XSetBackground(dis, gc, 0xd0d0d0);
-	XDrawImageString(dis, dr, gc, left+20, top+30, " || PAUSE ", 10);
+	XDrawImageString(dis, dr, gc, left+20, top+30, "|| PAUSE", 8);
 
 	draw_static(dr, ww, wh);
 }
@@ -266,7 +266,7 @@ static int wait_key(unsigned int keycode)
 	while (1) {
 		XNextEvent(dis, &event);
 
-		if (event.type==ClientMessage && event.xclient.data.l[0] == (int) wmDeleteMessage) {
+		if (event.type==ClientMessage && event.xclient.data.l[0] == (long) wmDeleteMessage) {
 			return 0;
 		}
 
@@ -315,7 +315,7 @@ static int x11_loop()
 	while (XPending(dis)) {
 		XNextEvent(dis, &event);
 
-		if (event.type==ClientMessage && event.xclient.data.l[0] == (int) wmDeleteMessage) {
+		if (event.type==ClientMessage && event.xclient.data.l[0] == (long) wmDeleteMessage) {
 			return 0;
 		}
 
@@ -474,7 +474,7 @@ static int init_win()
 	while (XPending(dis)) {
 		XNextEvent(dis, &event);
 
-		if (event.type==ClientMessage && event.xclient.data.l[0] == (int) wmDeleteMessage) {
+		if (event.type==ClientMessage && event.xclient.data.l[0] == (long) wmDeleteMessage) {
 			return 0;
 		}
 
