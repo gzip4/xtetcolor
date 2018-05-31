@@ -104,6 +104,22 @@ static void default_draw(Drawable dr, int ww, int wh)
 }
 
 
+static void draw_paused(Drawable dr, int ww, int wh)
+{
+	const int cw = ww / 2, ch = wh / 2;
+	const int left = cw - FIELD_WP/2, top = ch - FIELD_HP/2, w = FIELD_WP, h = FIELD_HP;
+
+	XSetForeground(dis, gc, 0xffff);
+	XDrawRectangle(dis, dr, gc, left-1, top-1, w+2, h+2);
+	XSetForeground(dis, gc, 0xd0d0d0);
+	XFillRectangle(dis, dr, gc, left, top, w+1, h+1);
+
+	XSetForeground(dis, gc, black);
+	XSetBackground(dis, gc, 0xd0d0d0);
+	XDrawImageString(dis, dr, gc, left+20, top+30, " || PAUSE ", 10);
+}
+
+
 static void draw(Drawable dr, int ww, int wh)
 {
 	const int cw = ww / 2, ch = wh / 2;
@@ -348,6 +364,17 @@ static int x11_loop()
 			if (game_move_down(game)) {
 				draw_win();
 			}
+		}
+
+		// XXX: key P
+		if (event.type==KeyPress && event.xkey.keycode==0x21) {
+			drawptr = draw_paused;
+			draw_win();
+			if (!wait_key(0x21)) {
+				return 0;
+			}
+			drawptr = draw;
+			draw_win();
 		}
 
 		if (event.type==KeyPress) {
