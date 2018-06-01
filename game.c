@@ -72,6 +72,8 @@ int game_tick(game_t *g)
 {
 	if (g->game_over) return 0;
 
+	++g->ticks;
+
 	// level up
 	if (g->ticks > 1 && g->ticks % 100 == 0) {
 		++g->level;
@@ -86,7 +88,6 @@ int game_tick(game_t *g)
 			g->game_over = 1;
 			return 0;
 		}
-		++g->ticks;
 		return 2;
 	}
 
