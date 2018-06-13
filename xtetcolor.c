@@ -385,6 +385,7 @@ static int x11_loop()
 			}
 			drawptr = draw;
 			draw_win();
+			last_time = getmseconds();
 		}
 
 		if (event.type==KeyPress) {
