@@ -566,7 +566,11 @@ int main(int argc, char *argv[])
 	gettimeofday(&tv, NULL);
 	const_seconds0 = tv.tv_sec;
 	const_useconds0 = tv.tv_usec;
+#if defined(__NetBSD__)
+	srandom(tv.tv_sec & tv.tv_usec);
+#else
 	srand(tv.tv_sec & tv.tv_usec);
+#endif
 
 	if (!init_win()) {
 		goto main_exit;
