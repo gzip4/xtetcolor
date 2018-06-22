@@ -266,39 +266,43 @@ static int collision(const game_t *g, int x, int y, cell_t *fig)
 static void gen_figure(game_t *g)
 {
 	memset(g->fig, EMPTY_CELL, 9);
+
 #if defined(__NetBSD__)
-	g->ftyp = random() % 4;
+# define RND	random
 #else
-	g->ftyp = rand() % 4;
+# define RND	rand
 #endif
+
+	g->ftyp = RND() % 4;
 
 	switch (g->ftyp) {
 	case 0:
 		g->fx = 2;
 		g->fy = 0;
-		g->fig[1] = rand() % 6;
+		g->fig[1] = RND() % 6;
 		break;
 	case 1:
 		g->fx = 2;
 		g->fy = 0;
-		g->fig[1] = rand() % 6;
-		g->fig[4] = rand() % 6;
+		g->fig[1] = RND() % 6;
+		g->fig[4] = RND() % 6;
 		break;
 	case 2:
 		g->fx = 2;
 		g->fy = 0;
-		g->fig[1] = rand() % 6;
-		g->fig[4] = rand() % 6;
-		g->fig[7] = rand() % 6;
+		g->fig[1] = RND() % 6;
+		g->fig[4] = RND() % 6;
+		g->fig[7] = RND() % 6;
 		break;
 	case 3:
 		g->fx = 2;
 		g->fy = 0;
-		g->fig[1] = rand() % 6;
-		g->fig[4] = rand() % 6;
-		g->fig[5] = rand() % 6;
+		g->fig[1] = RND() % 6;
+		g->fig[4] = RND() % 6;
+		g->fig[5] = RND() % 6;
 		break;
 	}
+#undef RND
 }
 
 
