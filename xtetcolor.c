@@ -106,7 +106,7 @@ static void draw_static(Drawable dr, int ww, int wh)
 		"Space      - Drop figure",
 		"P          - Pause / resume",
 		"ESC        - Leave game",
-		"xtetcolor v0.96, MIT (c) gzip4, 2018",
+		"xtetcolor v0.97, MIT (c) gzip4, 2018",
 		"https://github.com/gzip4/xtetcolor",
 		"XTETCOLOR"
 	};
@@ -538,7 +538,7 @@ int main(int argc, char *argv[])
 	struct timeval tv;
 
 	if (argc == 2 && 0 == strcmp(argv[1], "-h")) {
-		printf("XTetColor v0.96, gzip4ever@gmail.com (https://github.com/gzip4/xtetcolor)\n");
+		printf("XTetColor v0.97, gzip4ever@gmail.com (https://github.com/gzip4/xtetcolor)\n");
 		printf("MIT License. Copyright (c) gzip4, 2018\n");
 		return 0;
 	}
