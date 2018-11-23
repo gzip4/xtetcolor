@@ -471,7 +471,7 @@ static int init_win()
 	XSetWMProtocols(dis, win, &wmDeleteMessage, 1);
 	XSetStandardProperties(dis, win, "X Tetcolor", "HI!", None, NULL, 0, NULL);
 	XSelectInput(dis, win, ExposureMask|ButtonPressMask|KeyPressMask);
-	size_hints(dis, win);
+	size_hints();
 
 	/* transparent window - avoid flickering */
 	XSetWindowBackground(dis, win, None);
