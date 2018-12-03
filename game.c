@@ -83,6 +83,13 @@ int game_tick(game_t *g)
 	if (g->ftyp == -1) {
 		gen_figure(g);
 		if (collision(g, g->fx, g->fy, NULL)) {
+
+			// #      #
+			// ## -> ##
+			if (g->ftyp == 3 && game_move_rot(g, 0)) {
+				return 2;
+			}
+
 			copy_figure(g, g->cells);
 			clear_figure(g);
 			g->game_over = 1;
