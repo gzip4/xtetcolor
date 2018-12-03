@@ -369,8 +369,7 @@ static int x11_loop()
 			}
 		}
 
-		// XXX: key?????? spacebar
-		if (event.type==KeyPress && event.xkey.keycode==0x41) {
+		if (event.type==KeyPress && event.xkey.keycode==keySpace) {
 			if (game_move_down(game)) {
 				draw_win();
 			}
@@ -559,7 +558,7 @@ int main(int argc, char *argv[])
 	keyEnter= XKeysymToKeycode(dis, XK_Return);
 	keyLeft	= XKeysymToKeycode(dis, XK_Left);
 	keyRight= XKeysymToKeycode(dis, XK_Right);
-	keySpace= XKeysymToKeycode(dis, XK_KP_Space);
+	keySpace= XKeysymToKeycode(dis, XK_space);
 	keyUp	= XKeysymToKeycode(dis, XK_Up);
 	keyDown	= XKeysymToKeycode(dis, XK_Down);
 
