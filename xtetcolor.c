@@ -1,8 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <sys/time.h>
+#include <limits.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -34,6 +37,17 @@ int font1cw;
 unsigned int keyESC, keyEnter, keyLeft, keyRight, keySpace, keyUp, keyDown;
 void (*drawptr)(Drawable dr, int ww, int wh);
 game_t *game;
+char *user;
+char *score_filename;
+
+struct _hiscores {
+	unsigned int score;
+	char name[16];
+} hiscores[30];
+
+static void read_scores();
+static void write_scores();
+static void fix_scores();
 
 
 static time_t const_seconds0;
@@ -97,8 +111,9 @@ static void get_window_size(int *w, int *h)
 static void draw_static(Drawable dr, int ww, int wh)
 {
 	const int cw = ww / 2, ch = wh / 2;
-	const int left = cw - FIELD_WP/2, top = ch - FIELD_HP/2;
+	const int left = cw - FIELD_WP/2, top = ch - FIELD_HP/2, w = FIELD_WP;
 	int topn = top + 180;
+	int i;
 	char *str[] = {
 		"ENTER      - Start / reset",
 		"Left/Right - Move figure",
@@ -110,9 +125,10 @@ static void draw_static(Drawable dr, int ww, int wh)
 		"https://github.com/gzip4/xtetcolor",
 		"XTETCOLOR"
 	};
+	char buff[256], name[17];
 
 	XSetForeground(dis, gc, white);
-	XDrawString(dis, dr, gc, left-260, topn, str[0], strlen(str[0]));
+	XDrawString(dis, dr, gc, left-260, topn,     str[0], strlen(str[0]));
 	XDrawString(dis, dr, gc, left-260, topn+=20, str[1], strlen(str[1]));
 	XDrawString(dis, dr, gc, left-260, topn+=20, str[2], strlen(str[2]));
 	XDrawString(dis, dr, gc, left-260, topn+=20, str[3], strlen(str[3]));
@@ -129,6 +145,16 @@ static void draw_static(Drawable dr, int ww, int wh)
 	XSetForeground(dis, gc, 0xd0d000);
 	XDrawString(dis, dr, gc, left-260, top+18, str[8], strlen(str[8]));
 	XDrawString(dis, dr, gc, left-259, top+18, str[8], strlen(str[8]));
+
+	// scores
+	XSetForeground(dis, gc2, 0xff2000);
+	for (i = 0; i < 30; ++i) {
+		if (!hiscores[i].name[0]) break;
+		memset(name, 0, sizeof(name));
+		memcpy(name, hiscores[i].name, 16);
+		snprintf(buff, sizeof(buff), "%2d. [ %-16s ] _ _ _ _ _ %d", i+1, name, hiscores[i].score);
+		XDrawString(dis, dr, gc2, left+w+32, (top+18)+i*16, buff, strlen(buff));
+	}
 }
 
 
@@ -452,6 +478,11 @@ again:
 		return;
 	}
 
+	read_scores();
+	fix_scores();
+	write_scores();
+	draw_win();
+
 	// game needed for draw function, destroy after keypress
 	if (!wait_key(keyEnter)) {
 		return;
@@ -504,6 +535,7 @@ static int init_win()
 	return 1;
 }
 
+
 static int init_fonts()
 {
 	int i = 0;
@@ -532,15 +564,106 @@ static int init_fonts()
 	return 0;
 }
 
+
+static void usage()
+{
+	printf("XTetColor v0.97, gzip4ever@gmail.com (https://github.com/gzip4/xtetcolor)\n");
+	printf("MIT License. Copyright (c) gzip4, 2018\n");
+	printf("\t-u user\t\tset user name\n");
+	printf("\t-f file\t\tset hi-scores file name\n");
+	printf("\t-h\t\thelp\n");
+}
+
+
+static void read_scores()
+{
+	int fd, rv;
+	char tag[4];
+
+	memset(&hiscores[0], 0, sizeof(hiscores));
+	if (!score_filename) return;
+	if ((fd = open(score_filename, O_RDONLY)) == -1) return;
+
+	rv = read(fd, &tag[0], 4);
+	if ((rv != 4) || (memcmp(tag, "XTC", 4) != 0)) {
+		fprintf(stderr, "corrupted score file\n");
+		goto read_score_exit;
+	}
+
+	rv = read(fd, &hiscores[0], sizeof(hiscores));
+	if (rv != sizeof(hiscores)) {
+		memset(&hiscores[0], 0, sizeof(hiscores));
+		fprintf(stderr, "corrupted score file\n");
+		goto read_score_exit;
+	}
+
+read_score_exit:
+	close(fd);
+}
+
+
+static void write_scores()
+{
+	int fd, rv, i;
+
+	if (!score_filename) return;
+	if ((fd = open(score_filename, O_WRONLY | O_TRUNC | O_CREAT, 0664)) == -1) return;
+
+	write(fd, "XTC", 4);
+	write(fd, &hiscores[0], sizeof(hiscores));
+	close(fd);
+}
+
+
+static void fix_scores()
+{
+	int i;
+
+	if (!user || !game) return;
+
+	for (i = 0; i < 30; ++i) {
+		if (game->score > hiscores[i].score) {
+			memmove(&hiscores[i+1], &hiscores[i], sizeof(struct _hiscores)*(30-i-1));
+			hiscores[i].score = game->score;
+			memset(hiscores[i].name, 0, 16);
+			strncpy(hiscores[i].name, user, 16);
+			break;
+		}
+	}
+}
+
+
+static int parse_cmdline(int *argc, char **argv[])
+{
+	int ch, rc = 0;
+	while ((ch = getopt(*argc, *argv, "hu:f:")) != -1) {
+		switch (ch) {
+		case 'u':
+			user = optarg;
+			break;
+		case 'f':
+			score_filename = optarg;
+			break;
+		case 'h':
+		case '?':
+		default:
+			usage();
+			rc = 1;
+		}
+	}
+	*argc -= optind;
+	*argv += optind;
+
+	return rc;
+}
+
+
 int main(int argc, char *argv[])
 {
 	struct timeval tv;
-
-	if (argc == 2 && 0 == strcmp(argv[1], "-h")) {
-		printf("XTetColor v0.97, gzip4ever@gmail.com (https://github.com/gzip4/xtetcolor)\n");
-		printf("MIT License. Copyright (c) gzip4, 2018\n");
-		return 0;
-	}
+	char buff[PATH_MAX];
+	int rc = parse_cmdline(&argc, &argv);
+	if (rc) return rc;
 
 	dis	= XOpenDisplay((char *)0);
 	if (!dis) {
@@ -570,6 +693,16 @@ int main(int argc, char *argv[])
 #else
 	srand(tv.tv_sec & tv.tv_usec);
 #endif
+
+	if (!user) user = getenv("XTET_USER");
+	if (!user) user = getenv("USER");
+
+	if (!score_filename) {
+		snprintf(buff, PATH_MAX, "%s/.xtetcolor.score", getenv("HOME"));
+		score_filename = buff;
+	}
+
+	read_scores();
 
 	if (!init_win()) {
 		goto main_exit;
