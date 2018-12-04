@@ -13,6 +13,8 @@
 
 #include "game.h"
 
+#define VERSION "0.97"
+
 #ifndef MIN
 #define MIN(x,y) ((x)<(y)?(x):(y))
 #endif
@@ -121,7 +123,7 @@ static void draw_static(Drawable dr, int ww, int wh)
 		"Space      - Drop figure",
 		"P          - Pause / resume",
 		"ESC        - Leave game",
-		"xtetcolor v0.97, MIT (c) gzip4, 2018",
+		"xtetcolor v" VERSION ", MIT (c) gzip4, 2018",
 		"https://github.com/gzip4/xtetcolor",
 		"XTETCOLOR"
 	};
@@ -567,7 +569,7 @@ static int init_fonts()
 
 static void usage()
 {
-	printf("XTetColor v0.97, gzip4ever@gmail.com (https://github.com/gzip4/xtetcolor)\n");
+	printf("XTetColor v" VERSION ", gzip4ever@gmail.com (https://github.com/gzip4/xtetcolor)\n");
 	printf("MIT License. Copyright (c) gzip4, 2018\n");
 	printf("\t-u user\t\tset user name\n");
 	printf("\t-f file\t\tset hi-scores file name\n");
