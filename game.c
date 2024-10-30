@@ -224,9 +224,10 @@ static void copy_figure(const game_t *g, cell_t *cp)
 
 static int collision(const game_t *g, int x, int y, cell_t *fig)
 {
-	int i, j, k = 0, n = 4;
+	int i, j, k = 0, n = 4, idx;
 	cell_t cell;
 
+	if (x < -1) return 1;
 	if (y >= g->h) return 1;
 
 	if (!fig) fig = g->fig;
@@ -238,7 +239,8 @@ static int collision(const game_t *g, int x, int y, cell_t *fig)
 			if ((y + j) >= g->h) {
 				return 1;
 			}
-			if (g->cells[(y+j) * g->w + (x+i)] != EMPTY_CELL) {
+			idx = (y+j) * g->w + (x+i);
+			if (g->cells[idx] != EMPTY_CELL) {
 				return 1;
 			}
 			k = MAX(k, i);	// max filled i
